@@ -9,7 +9,7 @@ from PySide6.QtCore import Qt, Signal
 from ui.pages.modal.add_controller import AddControllerDialog
 
 from core.mapper import Mapper
-
+from core.settings import SettingsManager
 
 class EmuListItemWidget(QWidget):
     emulate_requested = Signal(str, str, object)
@@ -77,7 +77,7 @@ class DashboardPage(QWidget):
 
         self.hid_manager = hid_manager
         self.mappers: dict = {}
-
+        self.settings = SettingsManager()
         lbl_dashboard = QLabel("Dashboard Page")
         lbl_dashboard.setAlignment(Qt.AlignCenter)
 
@@ -273,7 +273,7 @@ class DashboardPage(QWidget):
             else:
                 controller_type = "Generic"
 
-            mapper = Mapper(controller, controller_type, "x360")
+            mapper = Mapper(controller, controller_type, "x360", self.settings)
             self.mappers[path] = mapper
 
             wtuple = getattr(self.hid_manager, "_workers", {}).get(path)
