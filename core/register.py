@@ -6,9 +6,9 @@ import json
 #       }
 
 class CustomGamepad:
-    def __init__(self, name, map):
+    def __init__(self):
         self.load_from_json()
-                
+        
 
     def save_to_json(self, name, map):
         self.config[name] = map
