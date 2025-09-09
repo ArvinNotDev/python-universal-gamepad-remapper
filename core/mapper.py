@@ -138,7 +138,7 @@ class Mapper:
         if rt_cfg.get("signed", False) and raw_rt > 127:
             raw_rt -= 256
         
-        left_stick_deadzone, right_stick_deadzone = self.settings.get_deadzone()
+        left_stick_deadzone, right_stick_deadzone = self.settings.get_deadzones()
 
         ljx, ljy = self._apply_deadzone(raw_ljx, raw_ljy, left_stick_deadzone, left_y_cfg.get("invert", False), left_x_cfg.get("invert", False))
         rjx, rjy = self._apply_deadzone(raw_rjx, raw_rjy, right_stick_deadzone, right_y_cfg.get("invert", False), right_x_cfg.get("invert", False))

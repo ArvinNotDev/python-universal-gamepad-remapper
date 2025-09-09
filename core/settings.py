@@ -14,7 +14,7 @@ class SettingsManager:
     def get_developer_section(self):
         return self.config["developer"]
 
-    def get_deadzone(self):
+    def get_deadzones(self):
         left = self.config.getfloat("device", "left_stick_deadzone")
         right = self.config.getfloat("device", "right_stick_deadzone")
         return left, right
