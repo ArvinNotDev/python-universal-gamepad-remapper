@@ -36,9 +36,5 @@
     "left_stick_y": "LeftThumbY",
     "right_stick_x": "RightThumbX",
     "right_stick_y": "RightThumbY"
-  },
-  "deadzones": {
-    "left_stick": 0.1,
-    "right_stick": 0.1
   }
 }
