@@ -8,11 +8,12 @@ class Mapper:
     applies proper scaling and supports per-axis 'invert' in the JSON profile.
     """
 
-    def __init__(self, controller, controller_type, emulate_to, debug=False):
+    def __init__(self, controller, controller_type, emulate_to, settings, debug=False):
         self.controller = controller
         self.controller_type = controller_type
         self._connected = False
         self.debug = debug
+        self.settings = settings
 
         if emulate_to == "x360":
             self.emulator = EmulateX360(controller.device_path)
@@ -136,9 +137,8 @@ class Mapper:
             raw_lt -= 256
         if rt_cfg.get("signed", False) and raw_rt > 127:
             raw_rt -= 256
-
-        left_stick_deadzone = deadzone_cfg.get("left_stick")
-        right_stick_deadzone = deadzone_cfg.get("right_stick")
+        
+        left_stick_deadzone, right_stick_deadzone = self.settings.get_deadzone()
 
         ljx, ljy = self._apply_deadzone(raw_ljx, raw_ljy, left_stick_deadzone, left_y_cfg.get("invert", False), left_x_cfg.get("invert", False))
         rjx, rjy = self._apply_deadzone(raw_rjx, raw_rjy, right_stick_deadzone, right_y_cfg.get("invert", False), right_x_cfg.get("invert", False))
