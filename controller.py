@@ -1,4 +1,5 @@
 import weakref
+import uuid
 
 
 class PlayerType:
@@ -33,6 +34,7 @@ class AddControllerName:
     
 class Controller:
     def __init__(self, device_id, name=None):
+        self.uuid = uuid.uuid4()
         self.name = AddControllerName(name)
         # i must implement this shit in the future
         
