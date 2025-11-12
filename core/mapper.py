@@ -71,7 +71,7 @@ class Mapper:
         dpl = bool(report[9] & 0x04)
         dpr = bool(report[9] & 0x08)
 
-        self.emulator.update_controller(
+        self.emulator.update(
             ljx, ljy, rjx, rjy, a, x, b, y, rb, rt, lb, lt, dpu, dpd, dpr, dpl
         )
 
