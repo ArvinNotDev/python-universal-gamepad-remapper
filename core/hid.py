@@ -1,49 +1,58 @@
-from PySide6.QtCore import QObject
+from PySide6.QtCore import QObject, QThread
 from .hid_manager import HIDWorker
-from PySide6.QtCore import QThread
 import hid
+from core.controller import Controller
 
 
 class HIDManager(QObject):
-    """High-level manager that handles scanning and thread management."""
+    """High-level manager to scan devices and poll multiple controllers simultaneously."""
 
     def __init__(self, poll_interval=0.008):
         super().__init__()
-        self.devices = []
         self.poll_interval = poll_interval
-        self._thread = None
-        self._worker = None
+        self.devices = []
+        self._workers = {}  # each key is a device path
 
     def scan_devices(self):
-        """List all HID devices currently connected."""
+        """Return all connected HID devices."""
         self.devices = hid.enumerate()
         return self.devices
 
-    def start_polling(self, device_path, on_data=None, on_error=None):
-        """Start a polling worker in a QThread."""
-        if self._thread is not None:
-            print("Polling already running.")
+    def start_polling(self, vendor_id, product_id, path, name=None, on_data=None, on_error=None):
+        """Start a worker for a specific controller."""
+        if path in self._workers:
+            print(f"Already polling device {path}")
             return
 
-        self._thread = QThread()
-        self._worker = HIDWorker(device_path, self.poll_interval)
-        self._worker.moveToThread(self._thread)
+        controller = Controller(vendor_id, product_id, name, path)
 
-        self._thread.started.connect(self._worker.run)
-        self._worker.finished.connect(self._thread.quit)
-        self._worker.finished.connect(self._worker.deleteLater)
-        self._thread.finished.connect(self._thread.deleteLater)
+        thread = QThread()
+        worker = HIDWorker(controller, self.poll_interval)
+        worker.moveToThread(thread)
+
+        thread.started.connect(worker.run)
+        worker.finished.connect(thread.quit)
+        worker.finished.connect(worker.deleteLater)
+        thread.finished.connect(thread.deleteLater)
 
         if on_data:
-            self._worker.data_received.connect(on_data)
+            worker.data_received.connect(on_data)
         if on_error:
-            self._worker.error.connect(on_error)
+            worker.error.connect(on_error)
 
-        self._thread.start()
+        thread.start()
 
-    def stop(self):
-        """Stop the polling loop cleanly."""
-        if self._worker:
-            self._worker.stop()
-        self._worker = None
-        self._thread = None
+        self._workers[path] = (thread, worker)
+
+        return controller
+
+    def stop_polling(self, path):
+        """Stop polling a specific device."""
+        if path in self._workers:
+            thread, worker = self._workers.pop(path)
+            worker.stop()
+
+    def stop_all(self):
+        """Stop all polling workers."""
+        for path in list(self._workers.keys()):
+            self.stop_polling(path)

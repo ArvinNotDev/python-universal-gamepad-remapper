@@ -1,17 +1,17 @@
-from PySide6.QtCore import QObject, QThread, Signal
+from PySide6.QtCore import QObject, Signal
 import hid
 import time
 
 
 class HIDWorker(QObject):
-    """Background HID polling worker that runs in a QThread."""
+    """Background HID polling worker for a single controller."""
     data_received = Signal(bytes)
     error = Signal(str)
     finished = Signal()
 
-    def __init__(self, device_path: str, poll_interval: float = 0.008):
+    def __init__(self, controller, poll_interval: float = 0.008):
         super().__init__()
-        self.device_path = device_path
+        self.controller = controller
         self.poll_interval = poll_interval
         self._running = True
 
@@ -19,9 +19,9 @@ class HIDWorker(QObject):
         self._running = False
 
     def run(self):
-        """Main loop running inside QThread."""
+        """Poll the device in a loop."""
         try:
-            with hid.Device(path=self.device_path) as dev:
+            with hid.Device(path=self.controller.path) as dev:
                 while self._running:
                     try:
                         data = dev.read(64)
