@@ -1,10 +1,10 @@
-import core.hid_manager as hid_manager
+import hid
 import time
 
-for device in hid_manager.enumerate():
+for device in hid.enumerate():
     print(device)
     print(type(device))
-ds4 = hid_manager.device()
+ds4 = hid.device()
 ds4.open(vendor_id=1356, product_id=2508)
 
 while True:

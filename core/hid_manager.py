@@ -1,15 +1,15 @@
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, QThread, Signal
 import hid
 import time
 
 
 class HIDWorker(QObject):
-    """Background HID polling worker for a single controller."""
+    """Polls a single controller using classic hid.device() in a QThread."""
     data_received = Signal(bytes)
     error = Signal(str)
     finished = Signal()
 
-    def __init__(self, controller, poll_interval: float = 0.008):
+    def __init__(self, controller, poll_interval=0.008):
         super().__init__()
         self.controller = controller
         self.poll_interval = poll_interval
@@ -20,18 +20,24 @@ class HIDWorker(QObject):
 
     def run(self):
         """Poll the device in a loop."""
+        ds = hid.device()
         try:
-            with hid.Device(path=self.controller.path) as dev:
-                while self._running:
-                    try:
-                        data = dev.read(64)
-                        if data:
-                            self.data_received.emit(bytes(data))
-                        time.sleep(self.poll_interval)
-                    except Exception as e:
-                        self.error.emit(str(e))
-                        break
+            ds.open(self.controller.vendor_id, self.controller.product_id)
         except Exception as e:
-            self.error.emit(f"Failed to open HID device: {e}")
+            self.error.emit(f"Failed to open {self.controller}: {e}")
+            self.finished.emit()
+            return
+
+        try:
+            while self._running:
+                try:
+                    report = ds.read(64)
+                    if report:
+                        self.data_received.emit(bytes(report))
+                    time.sleep(self.poll_interval)
+                except Exception as e:
+                    self.error.emit(str(e))
+                    break
         finally:
+            ds.close()
             self.finished.emit()
