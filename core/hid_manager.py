@@ -1,10 +1,10 @@
-import hid
+import core.hid_manager as hid_manager
 
 class Hid:
     devices = []
 
     def update_devices(self):
-        for device in hid.enumerate():
+        for device in hid_manager.enumerate():
             self.devices.append(device)
     
     def get_specific_device_details(self, vendor=None, device_id=None, path=None):

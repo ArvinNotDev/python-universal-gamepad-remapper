@@ -1,13 +1,13 @@
-import hid
+import core.hid_manager as hid_manager
 import vgamepad as vg
 import time
 
-devices = hid.enumerate()
+devices = hid_manager.enumerate()
 for i, d in enumerate(devices):
     print(f"{i}: VID={d['vendor_id']:04X}, PID={d['product_id']:04X}, Name={d['product_string']}")
 
 
-controller = hid.device()
+controller = hid_manager.device()
 controller.open(vendor_id=1356, product_id=2508)
 
 v_x360 = vg.VX360Gamepad()
