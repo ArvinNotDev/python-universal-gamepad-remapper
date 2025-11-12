@@ -1,8 +1,9 @@
 import vgamepad as vg
 
+
 class EmulateX360:
-    def __init__(self, controller_uuid):
-        self.controller_uuid = controller_uuid
+    def __init__(self, device_path):
+        self.device_path = device_path
         self.v_x360 = vg.VX360Gamepad()
 
     def update(self, ljx, ljy, rjx, rjy, a=False, x=False, b=False, y=False,
@@ -43,3 +44,6 @@ class EmulateX360:
             self.v_x360.press_button(button=button)
         else:
             self.v_x360.release_button(button=button)
+
+class EmulateKeyboard: # just for detecting that user wants to emulate the keyboard
+    pass
