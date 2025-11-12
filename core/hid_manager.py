@@ -4,7 +4,7 @@ import time
 
 
 class HIDWorker(QObject):
-    """Polls a single controller using classic hid.device() in a QThread."""
+    """Polls a single controller in a QThread using hid.device()"""
     data_received = Signal(bytes)
     error = Signal(str)
     finished = Signal()
@@ -19,7 +19,7 @@ class HIDWorker(QObject):
         self._running = False
 
     def run(self):
-        """Poll the device in a loop."""
+        """Poll the controller in a loop"""
         ds = hid.device()
         try:
             ds.open(self.controller.vendor_id, self.controller.product_id)
