@@ -1,4 +1,4 @@
-from core.emulator import EmulateX360
+from core.emulator import EmulateX360, EmulateKeyboard
 from core.hid_manager import HIDWorker
 import json
 
@@ -6,17 +6,26 @@ import json
 class Mapper:
     """Connects a physical HID controller to a virtual Xbox 360 controller."""
 
-    def __init__(self, controller, controller_type, poll_interval=0.008):
+    def __init__(self, controller, controller_type, emulate_to, poll_interval=0.008):
         self.controller = controller
         self.poll_interval = poll_interval
-        self.emulator = EmulateX360(controller.device_path)
+
+        if emulate_to == "x360":
+            self.emulator = EmulateX360(controller.device_path)
+        elif emulate_to == "keyboard":
+            self.emulator = EmulateKeyboard()
+        else:
+            raise ValueError(f"Invalid emulate_to target: {emulate_to}")
+        
         self.hid_worker = HIDWorker(controller, poll_interval)
         self._connected = False
         self.controller_config = None
 
         self.load_json(f"{controller_type}.json")
-
-        self.hid_worker.data_received.connect(self.handle_input)
+        if isinstance(self.emulator, EmulateX360):
+            self.hid_worker.data_received.connect(self.x360_handle_input)
+        elif isinstance(self.emulator, EmulateKeyboard):
+            self.hid_worker.data_received.connect(self.keyboard_handle_input)
         self.hid_worker.error.connect(self.handle_error)
 
     def load_json(self, filename):
@@ -31,13 +40,14 @@ class Mapper:
     def start(self):
         if not self._connected:
             self._connected = True
+            print(f"[Mapper] Starting mapper for {self.controller.name}")
             self.hid_worker.run()
 
     def stop(self):
         self.hid_worker.stop()
         self._connected = False
 
-    def handle_input(self, data: bytes):
+    def x360_handle_input(self, data: bytes):
         report = list(data)
         if len(report) < 10:
             return
@@ -64,6 +74,9 @@ class Mapper:
         self.emulator.update_controller(
             ljx, ljy, rjx, rjy, a, x, b, y, rb, rt, lb, lt, dpu, dpd, dpr, dpl
         )
+
+    def keyboard_handle_input(self, data: bytes):
+        pass
 
     def handle_error(self, err_msg):
         print(f"[Mapper] Error on {self.controller}: {err_msg}")
