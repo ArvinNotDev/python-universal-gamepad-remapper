@@ -7,9 +7,6 @@ def main():
     app.setApplicationName("Controller Remapper")
     app.setStyle("Fusion")
 
-    with open("ui/qss/style.qss", "r") as f:
-        app.setStyleSheet(f.read())
-
     window = MainWindow()
     window.show()
 
