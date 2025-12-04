@@ -4,7 +4,7 @@ from ui.main_window import MainWindow
 
 def main():
     app = QApplication(sys.argv)
-    app.setApplicationName("Controller Remapper")
+    app.setApplicationName("Universal Remapper")
     app.setStyle("Fusion")
 
     window = MainWindow()
