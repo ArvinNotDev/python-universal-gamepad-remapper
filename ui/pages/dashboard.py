@@ -17,6 +17,7 @@ class EmuListItemWidget(QWidget):
     emulate_requested(hid, emu, widget) when the 'Emulate' button is clicked.
     """
     emulate_requested = Signal(str, str, object)
+    delete_requested = Signal(object)
 
     def __init__(self, hid: str, emu: str, parent=None):
         super().__init__(parent)
@@ -37,12 +38,18 @@ class EmuListItemWidget(QWidget):
         self.btn_emulate.clicked.connect(self._on_emulate_clicked)
         layout.addWidget(self.btn_emulate)
 
+        self.btn_delete = QPushButton("Delete")
+        self.btn_delete.setToolTip("Remove this mapping")
+        self.btn_delete.clicked.connect(self._on_delete_clicked)
+        layout.addWidget(self.btn_delete)
+
         self.status = QLabel()
         self.status.setFixedSize(12, 12)
         self.status.setToolTip("Running status")
         self._update_status_style(False)
         layout.addWidget(self.status, alignment=Qt.AlignRight)
-
+        
+        
     def _update_status_style(self, running: bool):
         """Update status indicator appearance."""
         if running:
@@ -70,7 +77,8 @@ class EmuListItemWidget(QWidget):
         """
         self.set_running(not self._running)
         self.emulate_requested.emit(self.hid, self.emu, self)
-
+    def _on_delete_clicked(self):
+        self.delete_requested.emit(self)
 
 class DashboardPage(QWidget):
     """
@@ -125,6 +133,7 @@ class DashboardPage(QWidget):
         self.emu_list.setItemWidget(item, widget)
 
         widget.emulate_requested.connect(self._on_emulate_requested)
+        widget.delete_requested.connect(lambda w=widget, i=item: self._on_delete_requested(w, i))
 
     def _on_emulate_requested(self, hid: str, emu: str, widget: EmuListItemWidget):
         """
@@ -137,7 +146,9 @@ class DashboardPage(QWidget):
             self.start_emulation()
         else:
             self.stop_emulation()
-    
+    def _on_delete_requested(self, widget: EmuListItemWidget, item: QListWidgetItem):
+        self.emu_list.takeItem(self.emu_list.row(item))
+
     def start_emulation(self):
         pass
 
