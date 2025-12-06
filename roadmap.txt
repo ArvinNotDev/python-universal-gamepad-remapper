@@ -1,0 +1,15 @@
+1 => HIDManager()
+
+2 => scan_devices using HIDManager
+
+3 => start_polling using HIDMaager for parsing user selected controller
+     details like vendor_id, product_id, hid_path, name, on_data, on_error
+     (The Controller object now represents the physical controller.)
+
+4 => mapper = Mapper(controller, controller_type="ps4", emulate_to="x360")
+     mapper creates the EmulateX360 object and a HIDWorker.
+     (no need to run hid_worker.run() manually, let Mapper manage it.)
+
+5 => Call mapper.start() to begin polling and sending input to the virtual device.
+
+6 => Call mapper.stop() to stop the mapper.
