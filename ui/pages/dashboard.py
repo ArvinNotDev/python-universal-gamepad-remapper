@@ -93,6 +93,7 @@ class DashboardPage(QWidget):
         layout_dashboard = QVBoxLayout(self)
 
         self.devices = hid_manager.scan_devices()
+        self.hid_manager = hid_manager
 
         lbl_dashboard = QLabel("Dashboard Page")
         lbl_dashboard.setAlignment(Qt.AlignCenter)
@@ -116,13 +117,17 @@ class DashboardPage(QWidget):
         hid_list = []
         product_counter = 0
         previous_device = None
+        self.devices = self.hid_manager.scan_devices()
+
+
         for h in self.devices:
             hid_name = h["product_string"]
             if previous_device == hid_name:
                 hid_name = str(product_counter) + hid_name
             else:
                 product_counter = 0
-            hid_list.append(h["product_string"])
+                hid_list.append(h["product_string"])
+
             previous_device = h["product_string"]
 
         dialog.hid_list.addItems(hid_list)

@@ -44,7 +44,7 @@ class AddControllerDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         main_layout.addWidget(buttons)
-
+             
     def get_selections(self):
         """
         Returns (hid_device, emu_device) or (None, None) if nothing selected.
