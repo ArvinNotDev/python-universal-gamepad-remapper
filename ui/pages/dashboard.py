@@ -6,6 +6,8 @@ from PySide6.QtCore import Qt, Signal, QSize
 
 from ui.pages.modal.add_controller import AddControllerDialog
 
+from core.hid import HIDManager
+
 class EmuListItemWidget(QWidget):
     """
     Widget used inside QListWidget for each emulated device entry.
@@ -85,10 +87,12 @@ class DashboardPage(QWidget):
     Dashboard page that contains a QListWidget of emulated mappings.
     Each mapping row contains an Emulate button and a running indicator.
     """
-    def __init__(self):
+    def __init__(self, hid_manager):
         super().__init__()
 
         layout_dashboard = QVBoxLayout(self)
+
+        self.devices = hid_manager.scan_devices()
 
         lbl_dashboard = QLabel("Dashboard Page")
         lbl_dashboard.setAlignment(Qt.AlignCenter)
@@ -109,8 +113,20 @@ class DashboardPage(QWidget):
     def open_add_controller_dialog(self):
         dialog = AddControllerDialog(self)
 
-        dialog.hid_list.addItems(["HID Keyboard", "HID Mouse", "HID Gamepad"])
-        dialog.emu_list.addItems(["Emulate PS4", "Emulate PS5", "Emulate Xbox"])
+        hid_list = []
+        product_counter = 0
+        previous_device = None
+        for h in self.devices:
+            hid_name = h["product_string"]
+            if previous_device == hid_name:
+                hid_name = str(product_counter) + hid_name
+            else:
+                product_counter = 0
+            hid_list.append(h["product_string"])
+            previous_device = h["product_string"]
+
+        dialog.hid_list.addItems(hid_list)
+        dialog.emu_list.addItems(["Emulate Xbox"])
 
         if dialog.exec_() == QDialog.Accepted:
             hid_choice, emu_choice = dialog.get_selections()

@@ -8,6 +8,8 @@ from ui.pages.dashboard import DashboardPage
 from ui.pages.controllers import ControllersPage
 from ui.pages.settings import SettingsPage
 
+from core.hid import HIDManager
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -19,6 +21,8 @@ class MainWindow(QMainWindow):
         central = QWidget(self)
         main_layout = QHBoxLayout(central)
         self.setCentralWidget(central)
+
+        hid_manager = HIDManager(poll_interval=0.008)
 
         # ---------- LEFT MENU ----------
         self.menu = QListWidget()
@@ -47,7 +51,7 @@ class MainWindow(QMainWindow):
         self.pages = QStackedWidget()
 
         # Add pages to stacked widget
-        self.pages.addWidget(DashboardPage())
+        self.pages.addWidget(DashboardPage(hid_manager))
         self.pages.addWidget(ControllersPage())
         self.pages.addWidget(SettingsPage())
 

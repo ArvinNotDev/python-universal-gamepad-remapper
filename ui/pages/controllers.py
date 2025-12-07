@@ -4,7 +4,6 @@ from PySide6.QtCore import Qt
 class ControllersPage(QWidget):
     def __init__(self):
         super().__init__()
-
         layout_controllers = QVBoxLayout(self)
 
         lbl_controllers = QLabel("Controllers Page")
