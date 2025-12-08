@@ -1,0 +1,40 @@
+{
+  "axes": {
+    "left_stick_x": { "byte": 1, "signed": false },
+    "left_stick_y": { "byte": 2, "signed": false },
+    "right_stick_x": { "byte": 3, "signed": false },
+    "right_stick_y": { "byte": 4, "signed": false },
+    "left_trigger": { "byte": 7, "signed": false },
+    "right_trigger": { "byte": 8, "signed": false }
+  },
+  "buttons": {
+    "cross":  { "byte": 5, "mask": "0x20" },
+    "circle": { "byte": 5, "mask": "0x40" },
+    "square": { "byte": 5, "mask": "0x10" },
+    "triangle": { "byte": 5, "mask": "0x80" },
+    "l1":     { "byte": 6, "mask": "0x01" },
+    "r1":     { "byte": 6, "mask": "0x02" },
+    "dpad_up":    { "byte": 9, "mask": "0x01" },
+    "dpad_down":  { "byte": 9, "mask": "0x02" },
+    "dpad_left":  { "byte": 9, "mask": "0x04" },
+    "dpad_right": { "byte": 9, "mask": "0x08" }
+  },
+  "mapping": {
+    "cross": "A",
+    "circle": "B",
+    "square": "X",
+    "triangle": "Y",
+    "l1": "LB",
+    "r1": "RB",
+    "left_trigger": "LT",
+    "right_trigger": "RT",
+    "dpad_up": "DPadUp",
+    "dpad_down": "DPadDown",
+    "dpad_left": "DPadLeft",
+    "dpad_right": "DPadRight",
+    "left_stick_x": "LeftThumbX",
+    "left_stick_y": "LeftThumbY",
+    "right_stick_x": "RightThumbX",
+    "right_stick_y": "RightThumbY"
+  }
+}
