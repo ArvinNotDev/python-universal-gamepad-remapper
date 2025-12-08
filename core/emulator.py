@@ -1,6 +1,5 @@
 import vgamepad as vg
 
-
 class EmulateX360:
     def __init__(self, device_path):
         self.device_path = device_path
@@ -25,17 +24,8 @@ class EmulateX360:
         self._press_release(lb, vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_SHOULDER)
         self._press_release(rb, vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_SHOULDER)
 
-        # DPad
-        if dpu:
-            self.v_x360.directional_pad(direction=vg.DPAD_UP)
-        elif dpd:
-            self.v_x360.directional_pad(direction=vg.DPAD_DOWN)
-        elif dpl:
-            self.v_x360.directional_pad(direction=vg.DPAD_LEFT)
-        elif dpr:
-            self.v_x360.directional_pad(direction=vg.DPAD_RIGHT)
-        else:
-            self.v_x360.directional_pad(direction=vg.DPAD_NONE)
+        # DPad simulation
+        self._set_dpad(dpu, dpd, dpl, dpr)
 
         self.v_x360.update()
 
@@ -45,5 +35,26 @@ class EmulateX360:
         else:
             self.v_x360.release_button(button=button)
 
-class EmulateKeyboard: # just for detecting that user wants to emulate the keyboard
+    def _set_dpad(self, up, down, left, right):
+        # Release all first
+        for btn in [
+            vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_UP,
+            vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_DOWN,
+            vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_LEFT,
+            vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_RIGHT,
+        ]:
+            self.v_x360.release_button(btn)
+
+        # Press the active one
+        if up:
+            self.v_x360.press_button(vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_UP)
+        elif down:
+            self.v_x360.press_button(vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_DOWN)
+        elif left:
+            self.v_x360.press_button(vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_LEFT)
+        elif right:
+            self.v_x360.press_button(vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_RIGHT)
+
+
+class EmulateKeyboard:
     pass
