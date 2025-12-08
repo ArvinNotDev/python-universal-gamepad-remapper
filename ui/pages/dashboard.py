@@ -6,17 +6,10 @@ from PySide6.QtCore import Qt, Signal
 
 from ui.pages.modal.add_controller import AddControllerDialog
 
+from core.mapper import Mapper
+
 
 class EmuListItemWidget(QWidget):
-    """
-    Widget used inside QListWidget for each emulated device entry.
-
-    Shows:
-    [ text (HID → EMU) ] [ Emulate button ] [ status indicator ]
-
-    Emits:
-    emulate_requested(hid, emu, widget) when the 'Emulate' button is clicked.
-    """
     emulate_requested = Signal(str, str, object)
     delete_requested = Signal(object)
 
@@ -49,10 +42,8 @@ class EmuListItemWidget(QWidget):
         self.status.setToolTip("Running status")
         self._update_status_style(False)
         layout.addWidget(self.status, alignment=Qt.AlignRight)
-        
-        
+
     def _update_status_style(self, running: bool):
-        """Update status indicator appearance."""
         if running:
             color = "#2ecc71"
         else:
@@ -62,7 +53,6 @@ class EmuListItemWidget(QWidget):
         )
 
     def set_running(self, running: bool):
-        """Public method to set running indicator state."""
         self._running = bool(running)
         self._update_status_style(self._running)
         self.btn_emulate.setText("Stop" if self._running else "Emulate")
@@ -71,27 +61,20 @@ class EmuListItemWidget(QWidget):
         return self._running
 
     def _on_emulate_clicked(self):
-        """
-        Emit emulate_requested; the DashboardPage should connect to this
-        and implement actual logic. We also toggle the visual state here
-        as a placeholder so the UI responds immediately.
-        """
         self.set_running(not self._running)
         self.emulate_requested.emit(self.hid, self.emu, self)
+
     def _on_delete_clicked(self):
         self.delete_requested.emit(self)
 
+
 class DashboardPage(QWidget):
-    """
-    Dashboard page that contains a QListWidget of emulated mappings.
-    Each mapping row contains an Emulate button and a running indicator.
-    """
     def __init__(self, hid_manager):
         super().__init__()
-
         layout_dashboard = QVBoxLayout(self)
 
         self.hid_manager = hid_manager
+        self.mappers = {}
 
         lbl_dashboard = QLabel("Dashboard Page")
         lbl_dashboard.setAlignment(Qt.AlignCenter)
@@ -122,7 +105,6 @@ class DashboardPage(QWidget):
             name = dev.get("product_string") or f"VID_{dev.get('vendor_id')}_PID_{dev.get('product_id')}"
             count = name_counts.get(name, 0)
             name_counts[name] = count + 1
-
             display = name if count == 0 else f"{name} ({count})"
             hid_list_display.append(display)
             hid_path_list.append(dev)
@@ -134,7 +116,6 @@ class DashboardPage(QWidget):
             hid_choice, emu_choice = dialog.get_selections()
             if hid_choice and emu_choice:
                 added = self.add_emulated_mapping(hid_choice, emu_choice)
-
                 if not added:
                     return
 
@@ -157,12 +138,6 @@ class DashboardPage(QWidget):
                     print("[DashboardPage] Warning: selected HID could not be mapped to a device entry.")
 
     def add_emulated_mapping(self, hid: str, emu: str) -> bool:
-        """
-        Adds an item widget to the emu_list showing the mapping,
-        an emulate button and a status indicator.
-        Returns True if the mapping was added, False if it already existed.
-        """
-        # Duplicate check
         for i in range(self.emu_list.count()):
             existing_item = self.emu_list.item(i)
             existing_data = existing_item.data(Qt.UserRole)
@@ -175,7 +150,6 @@ class DashboardPage(QWidget):
                                         f"HID '{hid}' is already in the emulated devices list.")
                 return False
 
-        # No duplicate found
         item = QListWidgetItem()
         widget = EmuListItemWidget(hid, emu)
 
@@ -189,24 +163,132 @@ class DashboardPage(QWidget):
         widget.delete_requested.connect(lambda w=widget, i=item: self._on_delete_requested(w, i))
 
         return True
-    
-    def _on_emulate_requested(self, hid: str, emu: str, widget: EmuListItemWidget):
-        """
-        Called when a row's Emulate button is clicked.
-        """
-        running = widget.is_running()
-        print(f"[DashboardPage] Emulate requested: HID={hid}, EMU={emu}, running={running}")
 
+    def _find_device_by_display_name(self, display_name: str):
+        devices = getattr(self.hid_manager, "devices", None) or self.hid_manager.scan_devices() or []
+        base_name = display_name.split(" (")[0]
+        for dev in devices:
+            name = dev.get("product_string") or f"VID_{dev.get('vendor_id')}_PID_{dev.get('product_id')}"
+            if base_name == name:
+                return dev
+        return None
+
+    def _on_emulate_requested(self, hid: str, emu: str, widget: EmuListItemWidget):
+        running = widget.is_running()
+        device = self._find_device_by_display_name(hid)
+        if not device:
+            print("[DashboardPage] Could not match HID to device")
+            widget.set_running(False)
+            return
+
+        path = device.get("path")
         if running:
-            self.start_emulation()
+            if path in self.mappers:
+                return
+
+            controller = self.hid_manager.start_polling(
+                device.get("vendor_id"),
+                device.get("product_id"),
+                device.get("path")
+            )
+
+            vid = device.get("vendor_id")
+            pid = device.get("product_id")
+            try:
+                vid_int = int(vid) if isinstance(vid, (int,)) else int(str(vid), 0)
+            except Exception:
+                try:
+                    vid_int = int(vid)
+                except Exception:
+                    vid_int = None
+            try:
+                pid_int = int(pid) if isinstance(pid, (int,)) else int(str(pid), 0)
+            except Exception:
+                try:
+                    pid_int = int(pid)
+                except Exception:
+                    pid_int = None
+
+            if vid_int == 0x054C and pid_int in (0x05C4, 0x09CC):
+                controller_type = "Dualshock4"
+            elif vid_int == 0x054C and pid_int == 0x0CE6:
+                controller_type = "Dualsense"
+            else:
+                controller_type = "Generic"
+
+            mapper = Mapper(controller, controller_type, "x360")
+            self.mappers[path] = mapper
+
+            worker = None
+            wtuple = self.hid_manager._workers.get(path)
+            if wtuple:
+                _, worker, _ = wtuple
+            if worker:
+                worker.data_received.connect(mapper.handle_hid_data)
+                worker.error.connect(mapper.handle_error)
+
+            mapper.start()
+
         else:
-            self.stop_emulation()
+            if path in self.mappers:
+                mapper = self.mappers[path]
+                mapper.stop()
+                try:
+                    wtuple = self.hid_manager._workers.get(path)
+                    if wtuple:
+                        _, worker, _ = wtuple
+                        if worker:
+                            try:
+                                worker.data_received.disconnect(mapper.handle_hid_data)
+                            except Exception:
+                                pass
+                            try:
+                                worker.error.disconnect(mapper.handle_error)
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
+                del self.mappers[path]
+
+            try:
+                self.hid_manager.stop_polling(path)
+            except Exception:
+                pass
 
     def _on_delete_requested(self, widget: EmuListItemWidget, item: QListWidgetItem):
-        self.emu_list.takeItem(self.emu_list.row(item))
+        hid_emu = item.data(Qt.UserRole)
+        if hid_emu:
+            hid = hid_emu[0]
+            device = self._find_device_by_display_name(hid)
+            if device:
+                path = device.get("path")
+                if path in self.mappers:
+                    mapper = self.mappers[path]
+                    mapper.stop()
+                    del self.mappers[path]
+                try:
+                    self.hid_manager.stop_polling(path)
+                except Exception:
+                    pass
 
-    def start_emulation(self):
-        pass
+        for i in range(self.emu_list.count()):
+            if self.emu_list.item(i) is item:
+                self.emu_list.takeItem(i)
+                break
 
-    def stop_emulation(self):
-        pass
+    def closeEvent(self, event):
+        for path, mapper in list(self.mappers.items()):
+            try:
+                mapper.stop()
+            except Exception:
+                pass
+            try:
+                self.hid_manager.stop_polling(path)
+            except Exception:
+                pass
+            del self.mappers[path]
+        try:
+            self.hid_manager.stop_all()
+        except Exception:
+            pass
+        super().closeEvent(event)
