@@ -92,7 +92,6 @@ class DashboardPage(QWidget):
 
         layout_dashboard = QVBoxLayout(self)
 
-        self.devices = hid_manager.scan_devices()
         self.hid_manager = hid_manager
 
         lbl_dashboard = QLabel("Dashboard Page")
