@@ -1,12 +1,11 @@
 from PySide6.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QLabel, QListWidget, QPushButton,
-    QDialog, QListWidgetItem, QSizePolicy
+    QDialog, QListWidgetItem, QSizePolicy, QMessageBox
 )
-from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtCore import Qt, Signal
 
 from ui.pages.modal.add_controller import AddControllerDialog
 
-from core.hid import HIDManager
 
 class EmuListItemWidget(QWidget):
     """
@@ -113,40 +112,74 @@ class DashboardPage(QWidget):
     def open_add_controller_dialog(self):
         dialog = AddControllerDialog(self)
 
-        hid_list = []
-        product_counter = 0
-        previous_device = None
-        self.devices = self.hid_manager.scan_devices()
+        hid_list_display = []
+        hid_path_list = []
 
+        devices = self.hid_manager.scan_devices() or []
 
-        for h in self.devices:
-            hid_name = h["product_string"]
-            if previous_device == hid_name:
-                hid_name = str(product_counter) + hid_name
-            else:
-                product_counter = 0
-                hid_list.append(h["product_string"])
+        name_counts = {}
+        for dev in devices:
+            name = dev.get("product_string") or f"VID_{dev.get('vendor_id')}_PID_{dev.get('product_id')}"
+            count = name_counts.get(name, 0)
+            name_counts[name] = count + 1
 
-            previous_device = h["product_string"]
+            display = name if count == 0 else f"{name} ({count})"
+            hid_list_display.append(display)
+            hid_path_list.append(dev)
 
-        dialog.hid_list.addItems(hid_list)
+        dialog.hid_list.addItems(hid_list_display)
         dialog.emu_list.addItems(["Emulate Xbox"])
 
         if dialog.exec_() == QDialog.Accepted:
             hid_choice, emu_choice = dialog.get_selections()
             if hid_choice and emu_choice:
-                self.add_emulated_mapping(hid_choice, emu_choice)
+                added = self.add_emulated_mapping(hid_choice, emu_choice)
 
-    def add_emulated_mapping(self, hid: str, emu: str):
+                if not added:
+                    return
+
+                selected_index = -1
+                try:
+                    selected_index = dialog.hid_list.currentRow()
+                except Exception:
+                    selected_index = -1
+
+                if selected_index is None or selected_index < 0:
+                    try:
+                        selected_index = hid_list_display.index(hid_choice)
+                    except ValueError:
+                        selected_index = -1
+
+                if 0 <= selected_index < len(hid_path_list):
+                    device = hid_path_list[selected_index]
+                    self.hid_manager.start_polling(device["vendor_id"], device["product_id"], device["path"])
+                else:
+                    print("[DashboardPage] Warning: selected HID could not be mapped to a device entry.")
+
+    def add_emulated_mapping(self, hid: str, emu: str) -> bool:
         """
         Adds an item widget to the emu_list showing the mapping,
         an emulate button and a status indicator.
+        Returns True if the mapping was added, False if it already existed.
         """
+        # Duplicate check
+        for i in range(self.emu_list.count()):
+            existing_item = self.emu_list.item(i)
+            existing_data = existing_item.data(Qt.UserRole)
+            if existing_data and existing_data[0] == hid:
+                self.emu_list.setCurrentItem(existing_item)
+                existing_widget = self.emu_list.itemWidget(existing_item)
+                if existing_widget:
+                    existing_widget.setFocus()
+                QMessageBox.information(self, "Already added",
+                                        f"HID '{hid}' is already in the emulated devices list.")
+                return False
+
+        # No duplicate found
         item = QListWidgetItem()
         widget = EmuListItemWidget(hid, emu)
 
         item.setSizeHint(widget.sizeHint())
-
         item.setData(Qt.UserRole, (hid, emu))
 
         self.emu_list.addItem(item)
@@ -155,6 +188,8 @@ class DashboardPage(QWidget):
         widget.emulate_requested.connect(self._on_emulate_requested)
         widget.delete_requested.connect(lambda w=widget, i=item: self._on_delete_requested(w, i))
 
+        return True
+    
     def _on_emulate_requested(self, hid: str, emu: str, widget: EmuListItemWidget):
         """
         Called when a row's Emulate button is clicked.
@@ -166,6 +201,7 @@ class DashboardPage(QWidget):
             self.start_emulation()
         else:
             self.stop_emulation()
+
     def _on_delete_requested(self, widget: EmuListItemWidget, item: QListWidgetItem):
         self.emu_list.takeItem(self.emu_list.row(item))
 
