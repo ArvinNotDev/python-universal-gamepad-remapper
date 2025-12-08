@@ -5,7 +5,7 @@ import json
 class Mapper:
     """
     Connects HIDWorker output (data_received signal) to a virtual emulator.
-    mapper never polls hardware directly.
+    Mapper never polls hardware directly.
     """
 
     def __init__(self, controller, controller_type, emulate_to):
@@ -42,9 +42,6 @@ class Mapper:
         self._connected = False
 
     def handle_hid_data(self, data: bytes):
-        """
-        This is the slot connected to HIDWorker.data_received.
-        """
         if not self._connected:
             return
 
@@ -52,7 +49,6 @@ class Mapper:
             self._handle_x360_input(data)
         else:
             self._handle_keyboard_input(data)
-
 
     def _handle_x360_input(self, data: bytes):
         report = list(data)
