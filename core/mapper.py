@@ -56,7 +56,7 @@ class Mapper:
             return
 
         ljx = report[1]
-        ljy = report[2]
+        ljy = abs(255 - report[2])
         rjx = report[3]
         rjy = report[4]
 

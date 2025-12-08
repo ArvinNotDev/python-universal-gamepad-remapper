@@ -1,7 +1,7 @@
 {
   "axes": {
-    "left_stick_x": { "byte": 1, "signed": false },
-    "left_stick_y": { "byte": 2, "signed": false },
+    "left_stick_y": { "byte": 1, "signed": false },
+    "left_stick_x": { "byte": 2, "signed": false },
     "right_stick_x": { "byte": 3, "signed": false },
     "right_stick_y": { "byte": 4, "signed": false },
     "left_trigger": { "byte": 7, "signed": false },
