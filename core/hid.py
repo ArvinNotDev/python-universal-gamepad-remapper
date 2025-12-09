@@ -43,13 +43,23 @@ class HIDManager(QObject):
         return controller
 
     def stop_polling(self, device_path):
-        """Stop polling a controller by its device path."""
         if device_path in self._workers:
-            thread, worker, _ = self._workers.pop(device_path)
+            thread, worker, controller = self._workers[device_path]
+
             worker.stop()
 
+            def on_thread_finished():
+                if device_path in self._workers:
+                    self._workers.pop(device_path, None)
+
+            thread.finished.connect(on_thread_finished)
+
+
     def stop_all(self):
-        """Stop all polling workers."""
-        for device_path in list(self._workers.keys()):
-            thread, worker, _ = self._workers.pop(device_path)
+        for device_path, (thread, worker, controller) in list(self._workers.items()):
             worker.stop()
+
+            def cleanup(dp=device_path):
+                self._workers.pop(dp, None)
+
+            thread.finished.connect(cleanup)

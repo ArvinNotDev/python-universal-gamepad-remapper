@@ -4,7 +4,6 @@ import time
 
 
 class HIDWorker(QObject):
-    """Polls a single controller in a QThread using hid.device()"""
     data_received = Signal(bytes)
     error = Signal(str)
     finished = Signal()
@@ -19,7 +18,6 @@ class HIDWorker(QObject):
         self._running = False
 
     def run(self):
-        """Poll the controller in a loop"""
         ds = hid.device()
         try:
             ds.open(self.controller.vendor_id, self.controller.product_id)
@@ -31,13 +29,20 @@ class HIDWorker(QObject):
         try:
             while self._running:
                 try:
-                    report = ds.read(64)
+                    try:
+                        report = ds.read(64, timeout_ms=1)
+                    except TypeError:
+                        report = ds.read(64, timeout=1)
+
                     if report:
                         self.data_received.emit(bytes(report))
+
                     time.sleep(self.poll_interval)
+
                 except Exception as e:
                     self.error.emit(str(e))
                     break
+
         finally:
             ds.close()
             self.finished.emit()
