@@ -218,14 +218,16 @@ class DashboardPage(QWidget):
 
             mapper = Mapper(controller, controller_type, "x360")
             self.mappers[path] = mapper
-
             worker = None
             wtuple = self.hid_manager._workers.get(path)
             if wtuple:
                 _, worker, _ = wtuple
-            if worker:
-                worker.data_received.connect(mapper.handle_hid_data)
-                worker.error.connect(mapper.handle_error)
+                if worker and worker:
+                    try:
+                        worker.data_received.connect(mapper.handle_hid_data)
+                        worker.error.connect(mapper.handle_error)
+                    except RuntimeError:
+                        print(f"[Warning] Worker for {path} was deleted before connecting signals")
 
             mapper.start()
 
