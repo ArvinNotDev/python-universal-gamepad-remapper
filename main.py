@@ -1,12 +1,13 @@
 import sys
 from PySide6.QtWidgets import QApplication
 from ui.main_window import MainWindow
+from core.hid import HIDManager
 
 def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Universal Remapper")
-
-    window = MainWindow()
+    hid_manager = HIDManager(poll_interval=0.008)
+    window = MainWindow(hid_manager)
     window.show()
 
     sys.exit(app.exec())

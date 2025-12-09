@@ -8,10 +8,8 @@ from ui.pages.dashboard import DashboardPage
 from ui.pages.controllers import ControllersPage
 from ui.pages.settings import SettingsPage
 
-from core.hid import HIDManager
-
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, hid_manager):
         super().__init__()
 
         self.setWindowTitle("Universal Remapper")
@@ -21,8 +19,6 @@ class MainWindow(QMainWindow):
         central = QWidget(self)
         main_layout = QHBoxLayout(central)
         self.setCentralWidget(central)
-
-        hid_manager = HIDManager(poll_interval=0.008)
 
         # ---------- LEFT MENU ----------
         self.menu = QListWidget()
