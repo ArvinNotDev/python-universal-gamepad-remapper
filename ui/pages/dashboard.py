@@ -63,7 +63,6 @@ class EmuListItemWidget(QWidget):
         return self._running
 
     def _on_emulate_clicked(self):
-        # Toggle UI state first, then emit the request so listeners see new state
         self.set_running(not self._running)
         self.emulate_requested.emit(self.hid, self.emu, self)
 
@@ -72,25 +71,11 @@ class EmuListItemWidget(QWidget):
 
 
 class DashboardPage(QWidget):
-    """
-    DashboardPage manages a list of emulated device mappings.
-
-    Key changes / guarantees implemented in this version:
-    - Each QListWidgetItem stores the original device dict returned by hid_manager.scan_devices()
-      as the authoritative source of truth. This prevents name-based collisions when multiple
-      devices share the same product string.
-    - Mapping keys in self.mappers use the device['path'] value (when available) so each physical
-      device is handled independently.
-    - Add/delete/start/stop logic operates on the stored device object rather than resolving by
-      display text.
-    """
-
     def __init__(self, hid_manager):
         super().__init__()
         layout_dashboard = QVBoxLayout(self)
 
         self.hid_manager = hid_manager
-        # mappers: path -> Mapper instance
         self.mappers: dict = {}
 
         lbl_dashboard = QLabel("Dashboard Page")
@@ -109,7 +94,6 @@ class DashboardPage(QWidget):
         layout_dashboard.addWidget(self.emu_list)
         layout_dashboard.addWidget(add_btn)
 
-    # ------------------------- dialog / add flow -------------------------
     def open_add_controller_dialog(self):
         dialog = AddControllerDialog(self)
 
@@ -118,7 +102,6 @@ class DashboardPage(QWidget):
 
         devices = self.hid_manager.scan_devices() or []
 
-        # Build display names with disambiguation suffixes when necessary
         name_counts = {}
         for dev in devices:
             name = dev.get("product_string") or f"VID_{dev.get('vendor_id')}_PID_{dev.get('product_id')}"
@@ -128,9 +111,8 @@ class DashboardPage(QWidget):
             hid_list_display.append(display)
             hid_path_list.append(dev)
 
-        # populate dialog list widgets
         dialog.hid_list.addItems(hid_list_display)
-        dialog.emu_list.addItems(["Emulate Xbox"])  # keep as examples; dialog can be extended
+        dialog.emu_list.addItems(["Emulate Xbox"])
 
         if dialog.exec_() != QDialog.Accepted:
             return
@@ -139,8 +121,6 @@ class DashboardPage(QWidget):
         if not (hid_choice and emu_choice):
             return
 
-        # Resolve the selected device by the dialog's selected row first (preferred),
-        # otherwise match the display text as a fallback.
         selected_index = dialog.hid_list.currentRow()
         if selected_index is None or selected_index < 0:
             try:
@@ -152,12 +132,10 @@ class DashboardPage(QWidget):
         if 0 <= selected_index < len(hid_path_list):
             device = hid_path_list[selected_index]
 
-        # Add item to UI and attach the device object to the QListWidgetItem
         added = self.add_emulated_mapping(hid_choice, emu_choice, device)
         if not added:
             return
 
-        # If a concrete device is available, ensure polling is started for it so a worker exists.
         if device:
             try:
                 self.hid_manager.start_polling(device["vendor_id"], device["product_id"], device["path"])
@@ -167,16 +145,8 @@ class DashboardPage(QWidget):
             print("[DashboardPage] Warning: selected HID could not be mapped to a device entry.")
 
     def add_emulated_mapping(self, hid: str, emu: str, device: Optional[dict] = None) -> bool:
-        """
-        Create a new row in the emu_list. The QListWidgetItem's UserRole stores a tuple:
-            (device_dict_or_None, display_name, emu_name)
-
-        Duplicate detection is performed using device['path'] when available; otherwise using
-        the display name.
-        """
         new_path = device.get("path") if device else None
 
-        # Duplicate check
         for i in range(self.emu_list.count()):
             existing_item = self.emu_list.item(i)
             existing_data: Tuple[Optional[dict], Optional[str], Optional[str]] = existing_item.data(Qt.UserRole) or (None, None, None)
@@ -184,7 +154,6 @@ class DashboardPage(QWidget):
             existing_display = existing_data[1]
 
             if new_path and existing_device and existing_device.get("path") == new_path:
-                # same exact device already added
                 self.emu_list.setCurrentItem(existing_item)
                 existing_widget = self.emu_list.itemWidget(existing_item)
                 if existing_widget:
@@ -194,7 +163,6 @@ class DashboardPage(QWidget):
                 return False
 
             if not new_path and existing_display == hid:
-                # same display name already added (fallback)
                 self.emu_list.setCurrentItem(existing_item)
                 QMessageBox.information(self, "Already added",
                                         f"HID '{hid}' is already in the emulated devices list.")
@@ -204,19 +172,16 @@ class DashboardPage(QWidget):
         widget = EmuListItemWidget(hid, emu)
 
         item.setSizeHint(widget.sizeHint())
-        # Store a tuple: (device_dict_or_None, display_name, emu_name)
         item.setData(Qt.UserRole, (device, hid, emu))
 
         self.emu_list.addItem(item)
         self.emu_list.setItemWidget(item, widget)
 
-        # connect signals
         widget.emulate_requested.connect(self._on_emulate_requested)
         widget.delete_requested.connect(lambda w=widget, i=item: self._on_delete_requested(w, i))
 
         return True
 
-    # ------------------------- helpers / lookups -------------------------
     def _find_item_by_widget(self, widget: EmuListItemWidget) -> Optional[QListWidgetItem]:
         for i in range(self.emu_list.count()):
             it = self.emu_list.item(i)
@@ -225,7 +190,6 @@ class DashboardPage(QWidget):
         return None
 
     def _find_device_by_display_name(self, display_name: str) -> Optional[dict]:
-        # fallback method: find the first device whose base product_string matches
         devices = getattr(self.hid_manager, "devices", None) or self.hid_manager.scan_devices() or []
         base_name = display_name.split(" (")[0]
         for dev in devices:
@@ -234,9 +198,7 @@ class DashboardPage(QWidget):
                 return dev
         return None
 
-    # ------------------------- runtime control -------------------------
     def _on_emulate_requested(self, hid: str, emu: str, widget: EmuListItemWidget):
-        # Find the corresponding QListWidgetItem and the stored device object
         item = self._find_item_by_widget(widget)
         if item is None:
             print("[DashboardPage] Could not locate QListWidgetItem for widget")
@@ -247,7 +209,6 @@ class DashboardPage(QWidget):
         device = stored[0]
         display_name = stored[1] or hid
 
-        # If device is not stored (None), try fallback lookup by display name
         if not device:
             device = self._find_device_by_display_name(display_name)
             if not device:
@@ -259,13 +220,11 @@ class DashboardPage(QWidget):
         running = widget.is_running()
 
         if running:
-            # Start mapping only if not already mapped
             if path in self.mappers:
                 return
 
             controller = self.hid_manager.start_polling(device.get("vendor_id"), device.get("product_id"), path)
 
-            # determine controller type
             vid = device.get("vendor_id")
             pid = device.get("product_id")
             try:
@@ -293,7 +252,6 @@ class DashboardPage(QWidget):
             mapper = Mapper(controller, controller_type, "x360")
             self.mappers[path] = mapper
 
-            # connect worker signals to mapper if a worker exists
             wtuple = getattr(self.hid_manager, "_workers", {}).get(path)
             if wtuple:
                 _, worker, _ = wtuple
@@ -307,7 +265,6 @@ class DashboardPage(QWidget):
             mapper.start()
 
         else:
-            # Stop mapping if present
             if path in self.mappers:
                 mapper = self.mappers[path]
                 try:
@@ -315,7 +272,6 @@ class DashboardPage(QWidget):
                 except Exception:
                     pass
 
-                # disconnect signals from worker
                 try:
                     wtuple = getattr(self.hid_manager, "_workers", {}).get(path)
                     if wtuple:
@@ -344,7 +300,6 @@ class DashboardPage(QWidget):
         device = stored[0]
         display_name = stored[1]
 
-        # If we have a stored device object, stop the mapper and polling for that specific device
         if device:
             path = device.get("path")
             if path in self.mappers:
@@ -358,14 +313,12 @@ class DashboardPage(QWidget):
             except Exception:
                 pass
 
-        # remove the visual list item
         for i in range(self.emu_list.count()):
             if self.emu_list.item(i) is item:
                 self.emu_list.takeItem(i)
                 break
 
     def closeEvent(self, event):
-        # Clean shutdown: stop all mappers and polling workers
         for path, mapper in list(self.mappers.items()):
             try:
                 mapper.stop()
