@@ -20,7 +20,7 @@ class HIDWorker(QObject):
     def run(self):
         ds = hid.device()
         try:
-            ds.open(self.controller.vendor_id, self.controller.product_id)
+            ds.open_path(self.controller.device_path)
         except Exception as e:
             self.error.emit(f"Failed to open {self.controller}: {e}")
             self.finished.emit()
