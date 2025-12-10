@@ -6,7 +6,7 @@ from core.hid import HIDManager
 def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Universal Remapper")
-    hid_manager = HIDManager(poll_interval=0.008)
+    hid_manager = HIDManager(poll_interval=0)
     window = MainWindow(hid_manager)
     window.show()
 
