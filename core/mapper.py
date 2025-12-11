@@ -89,6 +89,17 @@ class Mapper:
         else:
             mask_int = int(mask)
         return (val & mask_int) != 0
+    
+    def _apply_deadzone(self, raw_x, raw_y, deadzone, invert_y, invert_x):
+        cx = raw_x - 128
+        cy = raw_y - 128
+        if abs(cx) < deadzone * 127:
+            cx = 0
+        if abs(cy) < deadzone * 127:
+            cy = 0
+        x_scaled = self._scale_stick_0_255_to_x360(cx + 128, invert_x)
+        y_scaled = self._scale_stick_0_255_to_x360(cy + 128, invert_y)
+        return x_scaled, y_scaled
 
     def _handle_x360_input(self, data: bytes):
         report = list(data)
@@ -97,6 +108,7 @@ class Mapper:
 
         axes_cfg = self.controller_config.get("axes", {})
         buttons_cfg = self.controller_config.get("buttons", {})
+        deadzone_cfg = self.controller_config.get("deadzones")
 
         left_x_cfg = axes_cfg.get("left_stick_x", {})
         left_y_cfg = axes_cfg.get("left_stick_y", {})
@@ -125,19 +137,11 @@ class Mapper:
         if rt_cfg.get("signed", False) and raw_rt > 127:
             raw_rt -= 256
 
-        ljx = self._scale_stick_0_255_to_x360(raw_ljx, False)
-        ljy = self._scale_stick_0_255_to_x360(raw_ljy, True)
-        rjx = self._scale_stick_0_255_to_x360(raw_rjx, False)
-        rjy = self._scale_stick_0_255_to_x360(raw_rjy, True)
+        left_stick_deadzone = deadzone_cfg.get("left_stick")
+        right_stick_deadzone = deadzone_cfg.get("right_stick")
 
-        if left_x_cfg.get("invert", False):
-            ljx = -ljx
-        if left_y_cfg.get("invert", False):
-            ljy = -ljy
-        if right_x_cfg.get("invert", False):
-            rjx = -rjx
-        if right_y_cfg.get("invert", False):
-            rjy = -rjy
+        ljx, ljy = self._apply_deadzone(raw_ljx, raw_ljy, left_stick_deadzone, left_y_cfg.get("invert", False), left_x_cfg.get("invert", False))
+        rjx, rjy = self._apply_deadzone(raw_rjx, raw_rjy, right_stick_deadzone, right_y_cfg.get("invert", False), right_x_cfg.get("invert", False))
 
         lt = int(raw_lt)
         rt = int(raw_rt)
@@ -179,12 +183,3 @@ class Mapper:
         print(f"[Mapper] Error from device {self.controller.name}: {msg}")
         self.stop()
 
-
-# ---- buttons that i know ---- #
-# 3 -> left_shock_x
-# 4 -> left_shock_y
-# 5 -> right_shock_x
-# 6 -> right_shock_y
-# 7 -> left_trigger
-# 8 -> right_trigger
-# 10 -> 8 for none and 24 for square and 40 for cross and 72 for circle and 136 for triangle
