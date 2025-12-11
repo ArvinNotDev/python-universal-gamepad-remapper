@@ -56,12 +56,12 @@ class Mapper:
         return max(lo, min(hi, v))
 
     @staticmethod
-    def _scale_stick_0_255_to_x360(val, y):
+    def _scale_stick_0_255_to_x360(val, invert_y):
         """
         Scale unsigned 0..255 (center ~128) to X360 signed 16-bit -32768..32767.
         """
         centered = float(val) - 128.0
-        if y:
+        if invert_y:
             normalized = -1 * centered / 127.0
         else:
             normalized = centered / 127.0
