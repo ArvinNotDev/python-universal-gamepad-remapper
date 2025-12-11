@@ -1,0 +1,9 @@
+---- buttons that i know for dualsense ---- 
+
+3 -> left_shock_x
+4 -> left_shock_y
+5 -> right_shock_x
+6 -> right_shock_y
+7 -> left_trigger
+8 -> right_trigger
+10 -> 8 for none and 24 for square and 40 for cross and 72 for circle and 136 for triangle
