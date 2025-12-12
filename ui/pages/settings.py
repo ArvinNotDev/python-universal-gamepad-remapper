@@ -2,7 +2,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PySide6.QtCore import Qt
 
 class SettingsPage(QWidget):
-    def __init__(self):
+    def __init__(self, theme_manager):
         super().__init__()
 
         layout_settingsPage = QVBoxLayout(self)
