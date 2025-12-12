@@ -1,0 +1,19 @@
+QMainWindow {
+    background-color: #f2f2f2;
+}
+
+QListWidget {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    color: #000000;
+    padding: 10px;
+}
+
+QListWidget::item {
+    padding: 10px;
+    color: #000000;
+}
+
+QListWidget::item:selected {
+    background-color: #dcdcdc;
+}
