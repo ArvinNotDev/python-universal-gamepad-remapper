@@ -1,19 +1,67 @@
 QMainWindow {
-    background-color: #1e1e1e;
+    background-color: #1e1e28;
+}
+
+QLabel {
+    color: #ffffff;
+    font-weight: 500;
 }
 
 QListWidget {
-    background-color: #2d2d30;
-    border: none;
-    color: white;
-    padding: 10px;
+    background-color: #2c2c38;
+    border: 2px solid #444455;
+    border-radius: 8px;
+    color: #ffffff;
+    padding: 8px;
+    outline: none;
 }
 
 QListWidget::item {
-    padding: 10px;
+    padding: 12px 10px;
+    margin: 2px 0;
     color: #ffffff;
+    border-radius: 6px;
+    background-color: #2c2c38;
 }
 
 QListWidget::item:selected {
-    background-color: #3e3e42;
+    background-color: qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 #5a5af0, stop:1 #3f3fd0
+    );
+    color: #ffffff;
+    font-weight: 600;
+}
+
+QListWidget::item:hover {
+    background-color: #3a3a5a;
+    color: #ffffff;
+}
+
+QScrollBar:vertical {
+    border: none;
+    background: #2c2c38;
+    width: 12px;
+    margin: 0px 0px 0px 0px;
+    border-radius: 6px;
+}
+
+QScrollBar::handle:vertical {
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 #5a5af0, stop:1 #3f3fd0
+    );
+    min-height: 20px;
+    border-radius: 6px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 #7a7af8, stop:1 #5a5af0
+    );
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    background: none;
 }
