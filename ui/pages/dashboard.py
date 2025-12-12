@@ -20,7 +20,7 @@ class EmuListItemWidget(QWidget):
         self.hid = hid
         self.emu = emu
         self._running = False
-
+        
         layout = QHBoxLayout(self)
         layout.setContentsMargins(8, 4, 8, 4)
         layout.setSpacing(8)
@@ -85,9 +85,31 @@ class DashboardPage(QWidget):
         emu_label.setAlignment(Qt.AlignCenter)
 
         self.emu_list = QListWidget()
-
+        self.emu_list.setStyleSheet("""
+            QListWidget::item {
+                padding: 0px;
+                color: #000000;
+                background-color: transparent;
+        }
+                                    """)
         add_btn = QPushButton("Add Controller")
         add_btn.clicked.connect(self.open_add_controller_dialog)
+        add_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #5390ff;
+                color: #000000;
+                border: 2px solid #000000;
+                border-radius: 6px;
+                padding: 6px 12px;
+            }
+            QPushButton:hover {
+                background-color: #f0f0f0;  /* same as normal to remove hover effect */
+            }
+            QPushButton:pressed {
+                background-color: #e0e0e0;
+            }
+        """)
+
 
         layout_dashboard.addWidget(lbl_dashboard)
         layout_dashboard.addWidget(emu_label)
