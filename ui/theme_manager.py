@@ -1,4 +1,3 @@
-# ui/theme_manager.py
 import os
 
 class ThemeManager:
@@ -7,22 +6,10 @@ class ThemeManager:
         self.base_path = base_path
         self._cache = {}
 
-    def _read(self, path):
-        if path in self._cache:
-            return self._cache[path]
-        if not os.path.exists(path):
-            return ""
-        with open(path, "r", encoding="utf-8") as f:
-            txt = f.read()
-        self._cache[path] = txt
-        return txt
-
     def apply_theme(self, theme_name: str):
         base_qss = self._read(os.path.join(self.base_path, f"{theme_name}.qss"))
-        # do not set app stylesheet yet; store base for later composition
         self.base_qss = base_qss
         self.current_theme = theme_name
-        # initially apply base only
         self.app.setStyleSheet(self.base_qss)
 
     def apply_component(self, component_name: str):
@@ -35,3 +22,13 @@ class ThemeManager:
     def clear_component(self):
         """Revert to base theme only."""
         self.app.setStyleSheet(self.base_qss or "")
+        
+    def _read(self, path):
+        if path in self._cache:
+            return self._cache[path]
+        if not os.path.exists(path):
+            return ""
+        with open(path, "r", encoding="utf-8") as f:
+            txt = f.read()
+        self._cache[path] = txt
+        return txt
