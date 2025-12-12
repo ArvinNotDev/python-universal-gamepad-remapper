@@ -1,19 +1,37 @@
+# ui/theme_manager.py
 import os
 
 class ThemeManager:
     def __init__(self, app, base_path="ui/themes"):
         self.app = app
         self.base_path = base_path
+        self._cache = {}
+
+    def _read(self, path):
+        if path in self._cache:
+            return self._cache[path]
+        if not os.path.exists(path):
+            return ""
+        with open(path, "r", encoding="utf-8") as f:
+            txt = f.read()
+        self._cache[path] = txt
+        return txt
 
     def apply_theme(self, theme_name: str):
-        """theme_name is 'dark' or 'light'"""
-        qss_path = os.path.join(self.base_path, f"{theme_name}.qss")
+        base_qss = self._read(os.path.join(self.base_path, f"{theme_name}.qss"))
+        # do not set app stylesheet yet; store base for later composition
+        self.base_qss = base_qss
+        self.current_theme = theme_name
+        # initially apply base only
+        self.app.setStyleSheet(self.base_qss)
 
-        if not os.path.exists(qss_path):
-            print(f"[ThemeManager] Missing QSS file: {qss_path}")
-            return
+    def apply_component(self, component_name: str):
+        """Append a component QSS (e.g. 'dashboard') to base and apply."""
+        comp_path = os.path.join(self.base_path, "components", f"{component_name}.qss")
+        comp_qss = self._read(comp_path)
+        composed = (self.base_qss or "") + "\n\n" + (comp_qss or "")
+        self.app.setStyleSheet(composed)
 
-        with open(qss_path, "r", encoding="utf-8") as f:
-            style = f.read()
-
-        self.app.setStyleSheet(style)
+    def clear_component(self):
+        """Revert to base theme only."""
+        self.app.setStyleSheet(self.base_qss or "")
