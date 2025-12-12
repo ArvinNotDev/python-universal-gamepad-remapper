@@ -4,13 +4,16 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
+from ui.theme_manager import ThemeManager
 from ui.pages.dashboard import DashboardPage
 from ui.pages.controllers import ControllersPage
 from ui.pages.settings import SettingsPage
 
 class MainWindow(QMainWindow):
-    def __init__(self, hid_manager):
+    def __init__(self, hid_manager, app):
         super().__init__()
+        self.theme_manager = ThemeManager(app)
+        self.theme_manager.apply_theme("light")
 
         self.setWindowTitle("Universal Remapper")
         self.resize(900, 500)
@@ -22,22 +25,9 @@ class MainWindow(QMainWindow):
 
         # ---------- LEFT MENU ----------
         self.menu = QListWidget()
-        self.menu.setFixedWidth(180)
-        self.menu.setSpacing(4)
-        self.menu.setStyleSheet("""
-            QListWidget {
-                background-color: #2d2d30;
-                border: none;
-                color: white;
-                padding: 10px;
-            }
-            QListWidget::item {
-                padding: 10px;
-            }
-            QListWidget::item:selected {
-                background-color: #3e3e42;
-            }
-        """)
+        self.menu.setFixedWidth(220)
+        self.menu.setSpacing(10)
+
 
         self.menu.addItem(QListWidgetItem("Dashboard"))
         self.menu.addItem(QListWidgetItem("Controllers"))
@@ -49,7 +39,7 @@ class MainWindow(QMainWindow):
         # Add pages to stacked widget
         self.pages.addWidget(DashboardPage(hid_manager))
         self.pages.addWidget(ControllersPage())
-        self.pages.addWidget(SettingsPage())
+        self.pages.addWidget(SettingsPage(self.theme_manager))
 
         # Add menu + pages to root layout
         main_layout.addWidget(self.menu)
