@@ -13,7 +13,7 @@ class MainWindow(QMainWindow):
     def __init__(self, hid_manager, app):
         super().__init__()
         self.theme_manager = ThemeManager(app)
-        self.theme_manager.apply_theme("light")
+        self.theme_manager.apply_theme("dark")
 
         self.setWindowTitle("Universal Remapper")
         self.resize(900, 500)
@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
 
         # ---------- LEFT MENU ----------
         self.menu = QListWidget()
-        self.menu.setFixedWidth(220)
+        self.menu.setFixedWidth(200)
         self.menu.setSpacing(10)
 
 
