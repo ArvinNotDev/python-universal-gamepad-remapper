@@ -133,6 +133,8 @@ class DashboardPage(QWidget):
             hid_list_display.append(display)
             hid_path_list.append(dev)
 
+        hid_list_display.reverse()
+        hid_path_list.reverse()
         dialog.hid_list.addItems(hid_list_display)
         dialog.emu_list.addItems(["Emulate Xbox"])
 
