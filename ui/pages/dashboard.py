@@ -71,13 +71,13 @@ class EmuListItemWidget(QWidget):
 
 
 class DashboardPage(QWidget):
-    def __init__(self, hid_manager):
+    def __init__(self, hid_manager, settings):
         super().__init__()
         layout_dashboard = QVBoxLayout(self)
 
         self.hid_manager = hid_manager
         self.mappers: dict = {}
-        self.settings = SettingsManager()
+        self.settings = settings
         lbl_dashboard = QLabel("Dashboard Page")
         lbl_dashboard.setAlignment(Qt.AlignCenter)
 
