@@ -9,11 +9,14 @@ from ui.pages.dashboard import DashboardPage
 from ui.pages.controllers import ControllersPage
 from ui.pages.settings import SettingsPage
 
+from core.settings import SettingsManager
+
 class MainWindow(QMainWindow):
     def __init__(self, hid_manager, app):
         super().__init__()
         self.theme_manager = ThemeManager(app)
         self.theme_manager.apply_theme("dark")
+        self.settings = SettingsManager()
 
         self.setWindowTitle("Universal Remapper")
         self.resize(900, 500)
@@ -37,9 +40,9 @@ class MainWindow(QMainWindow):
         self.pages = QStackedWidget()
 
         # Add pages to stacked widget
-        self.pages.addWidget(DashboardPage(hid_manager))
+        self.pages.addWidget(DashboardPage(hid_manager, self.settings))
         self.pages.addWidget(ControllersPage())
-        self.pages.addWidget(SettingsPage(self.theme_manager))
+        self.pages.addWidget(SettingsPage(self.theme_manager, self.settings))
 
         # Add menu + pages to root layout
         main_layout.addWidget(self.menu)
