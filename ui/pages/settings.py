@@ -124,15 +124,18 @@ class SettingsPage(QWidget):
         lbl_lang = QLabel("Language")
         self.combo_lang = QComboBox()
         self.combo_lang.addItems(["eng", "fa", "es"])
+        self.combo_lang.setMinimumWidth(100)
+        self.combo_lang.view().setMinimumWidth(130)
         lang_layout = QHBoxLayout()
         lang_layout.addWidget(lbl_lang)
         lang_layout.addStretch()
         lang_layout.addWidget(self.combo_lang)
         ui_box_layout.addLayout(lang_layout)
 
-        # theme: try read theme files from theme_manager.base_path
         lbl_theme = QLabel("Theme")
         self.combo_theme = QComboBox()
+        self.combo_theme.setMinimumWidth(100)
+        self.combo_theme.view().setMinimumWidth(130)
         theme_names = []
         try:
             base = getattr(self.theme_manager, "base_path", None)
