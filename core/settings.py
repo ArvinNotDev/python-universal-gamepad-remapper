@@ -25,10 +25,10 @@ class SettingsManager:
                 "log_to_file": "false",
                 "log_file_path": "logs/mapper.log",
             }
-            with self.path.open("w") as f:
+            with self.path.open("w", encoding="utf-8") as f:
                 self.config.write(f)
-        
-        self.config.read(path)
+
+        self.config.read(self.path)
 
     def get_device_section(self):
         return self.config["device"]
@@ -45,9 +45,12 @@ class SettingsManager:
         return left, right
 
     def set_deadzone(self, left, right):
+        if not self.config.has_section("device"):
+            self.config.add_section("device")
         self.config.set("device", "left_stick_deadzone", str(left))
         self.config.set("device", "right_stick_deadzone", str(right))
 
     def save(self):
-        with open(self.path, "w") as f:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("w", encoding="utf-8") as f:
             self.config.write(f)
