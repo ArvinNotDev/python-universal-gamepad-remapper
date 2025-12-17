@@ -76,6 +76,7 @@ class DashboardPage(QWidget):
         layout_dashboard = QVBoxLayout(self)
 
         self.hid_manager = hid_manager
+        hid_manager.poll_interval = settings.get_polling_rate()
         self.mappers: dict = {}
         self.settings = settings
         lbl_dashboard = QLabel("Dashboard Page")

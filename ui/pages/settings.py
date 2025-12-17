@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QSlider,
     QFrame, QListWidget, QStackedWidget,
-    QSpinBox, QCheckBox, QComboBox, QLineEdit
+    QSpinBox, QCheckBox, QComboBox, QLineEdit, QMessageBox
 )
 from PySide6.QtCore import Qt
 
@@ -267,6 +267,7 @@ class SettingsPage(QWidget):
         self.right_val.setText("0.10")
 
     def apply_device(self):
+        old_polling = self.settings.get_polling_rate()
         polling = self.spin_poll.value()
         self.settings.set_polling_rate(polling)
         self.settings.set_auto_reconnect(self.chk_reconnect.isChecked())
@@ -275,6 +276,15 @@ class SettingsPage(QWidget):
         right = self.right_slider.value() / 1000.0
         self.settings.set_deadzones(left, right)
         self.settings.save()
+
+        # Check if polling rate changed
+        if polling != old_polling:
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle("Restart Required")
+            msg.setText("Polling rate has changed. Please restart the application for the changes to take effect.")
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec()
 
     # ---------------- UI actions ----------------
     def restore_ui_defaults(self):
