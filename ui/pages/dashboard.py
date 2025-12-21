@@ -10,6 +10,8 @@ from ui.pages.modal.add_controller import AddControllerDialog
 
 from core.mapper import Mapper
 from core.settings import SettingsManager
+from core.hid import HIDManager
+from core import hid
 
 class EmuListItemWidget(QWidget):
     emulate_requested = Signal(str, str, object)
@@ -71,12 +73,12 @@ class EmuListItemWidget(QWidget):
 
 
 class DashboardPage(QWidget):
-    def __init__(self, hid_manager, settings):
+    def __init__(self, settings):
         super().__init__()
         layout_dashboard = QVBoxLayout(self)
 
-        self.hid_manager = hid_manager
-        hid_manager.poll_interval = settings.get_polling_rate()
+        hid.hid_manager = HIDManager(settings.get_polling_rate() / 1000)
+        print(f"poll: {hid.hid_manager.poll_interval}")
         self.mappers: dict = {}
         self.settings = settings
         lbl_dashboard = QLabel("Dashboard Page")
@@ -123,7 +125,7 @@ class DashboardPage(QWidget):
         hid_list_display = []
         hid_path_list = []
 
-        devices = self.hid_manager.scan_devices() or []
+        devices = hid.hid_manager.scan_devices() or []
 
         name_counts = {}
         for dev in devices:
@@ -163,13 +165,13 @@ class DashboardPage(QWidget):
 
         if device:
             try:
-                self.hid_manager.start_polling(device["vendor_id"], device["product_id"], device["path"])
+                hid.hid_manager.start_polling(device["vendor_id"], device["product_id"], device["path"])
             except Exception as exc:
                 print(f"[DashboardPage] Warning: start_polling failed for device: {exc}")
         else:
             print("[DashboardPage] Warning: selected HID could not be mapped to a device entry.")
 
-    def add_emulated_mapping(self, hid: str, emu: str, device: Optional[dict] = None) -> bool:
+    def add_emulated_mapping(self, hid_choice: str, emu: str, device: Optional[dict] = None) -> bool:
         new_path = device.get("path") if device else None
 
         for i in range(self.emu_list.count()):
@@ -184,20 +186,20 @@ class DashboardPage(QWidget):
                 if existing_widget:
                     existing_widget.setFocus()
                 QMessageBox.information(self, "Already added",
-                                        f"Device '{hid}' is already in the emulated devices list.")
+                                        f"Device '{hid_choice}' is already in the emulated devices list.")
                 return False
 
-            if not new_path and existing_display == hid:
+            if not new_path and existing_display == hid_choice:
                 self.emu_list.setCurrentItem(existing_item)
                 QMessageBox.information(self, "Already added",
-                                        f"HID '{hid}' is already in the emulated devices list.")
+                                        f"HID '{hid_choice}' is already in the emulated devices list.")
                 return False
 
         item = QListWidgetItem()
-        widget = EmuListItemWidget(hid, emu)
+        widget = EmuListItemWidget(hid_choice, emu)
 
         item.setSizeHint(widget.sizeHint())
-        item.setData(Qt.UserRole, (device, hid, emu))
+        item.setData(Qt.UserRole, (device, hid_choice, emu))
 
         self.emu_list.addItem(item)
         self.emu_list.setItemWidget(item, widget)
@@ -215,7 +217,7 @@ class DashboardPage(QWidget):
         return None
 
     def _find_device_by_display_name(self, display_name: str) -> Optional[dict]:
-        devices = getattr(self.hid_manager, "devices", None) or self.hid_manager.scan_devices() or []
+        devices = getattr(hid.hid_manager, "devices", None) or hid.hid_manager.scan_devices() or []
         base_name = display_name.split(" (")[0]
         for dev in devices:
             name = dev.get("product_string") or f"VID_{dev.get('vendor_id')}_PID_{dev.get('product_id')}"
@@ -223,7 +225,7 @@ class DashboardPage(QWidget):
                 return dev
         return None
 
-    def _on_emulate_requested(self, hid: str, emu: str, widget: EmuListItemWidget):
+    def _on_emulate_requested(self, hid_choice: str, emu: str, widget: EmuListItemWidget):
         item = self._find_item_by_widget(widget)
         if item is None:
             print("[DashboardPage] Could not locate QListWidgetItem for widget")
@@ -232,7 +234,7 @@ class DashboardPage(QWidget):
 
         stored = item.data(Qt.UserRole) or (None, None, None)
         device = stored[0]
-        display_name = stored[1] or hid
+        display_name = stored[1] or hid_choice
 
         if not device:
             device = self._find_device_by_display_name(display_name)
@@ -248,7 +250,7 @@ class DashboardPage(QWidget):
             if path in self.mappers:
                 return
 
-            controller = self.hid_manager.start_polling(device.get("vendor_id"), device.get("product_id"), path)
+            controller = hid.hid_manager.start_polling(device.get("vendor_id"), device.get("product_id"), path)
 
             vid = device.get("vendor_id")
             pid = device.get("product_id")
@@ -277,7 +279,7 @@ class DashboardPage(QWidget):
             mapper = Mapper(controller, controller_type, "x360", self.settings)
             self.mappers[path] = mapper
 
-            wtuple = getattr(self.hid_manager, "_workers", {}).get(path)
+            wtuple = getattr(hid.hid_manager, "_workers", {}).get(path)
             if wtuple:
                 _, worker, _ = wtuple
                 if worker:
@@ -298,7 +300,7 @@ class DashboardPage(QWidget):
                     pass
 
                 try:
-                    wtuple = getattr(self.hid_manager, "_workers", {}).get(path)
+                    wtuple = getattr(hid.hid_manager, "_workers", {}).get(path)
                     if wtuple:
                         _, worker, _ = wtuple
                         if worker:
@@ -316,7 +318,7 @@ class DashboardPage(QWidget):
                 del self.mappers[path]
 
             try:
-                self.hid_manager.stop_polling(path)
+                hid.hid_manager.stop_polling(path)
             except Exception:
                 pass
 
@@ -334,7 +336,7 @@ class DashboardPage(QWidget):
                     pass
                 del self.mappers[path]
             try:
-                self.hid_manager.stop_polling(path)
+                hid.hid_manager.stop_polling(path)
             except Exception:
                 pass
 
@@ -350,12 +352,12 @@ class DashboardPage(QWidget):
             except Exception:
                 pass
             try:
-                self.hid_manager.stop_polling(path)
+                hid.hid_manager.stop_polling(path)
             except Exception:
                 pass
             del self.mappers[path]
         try:
-            self.hid_manager.stop_all()
+            hid.hid_manager.stop_all()
         except Exception:
             pass
         super().closeEvent(event)

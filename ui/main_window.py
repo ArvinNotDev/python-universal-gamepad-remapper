@@ -12,7 +12,7 @@ from ui.pages.settings import SettingsPage
 from core.settings import SettingsManager
 
 class MainWindow(QMainWindow):
-    def __init__(self, hid_manager, app):
+    def __init__(self, app):
         super().__init__()
         self.theme_manager = ThemeManager(app)
         self.theme_manager.apply_theme("dark")
@@ -40,7 +40,7 @@ class MainWindow(QMainWindow):
         self.pages = QStackedWidget()
 
         # Add pages to stacked widget
-        self.pages.addWidget(DashboardPage(hid_manager, self.settings))
+        self.pages.addWidget(DashboardPage(self.settings))
         self.pages.addWidget(ControllersPage())
         self.pages.addWidget(SettingsPage(self.theme_manager, self.settings))
 
