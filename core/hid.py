@@ -63,3 +63,5 @@ class HIDManager(QObject):
                 self._workers.pop(dp, None)
 
             thread.finished.connect(cleanup)
+
+hid_manager = HIDManager()
