@@ -47,7 +47,7 @@ class SettingsPage(QWidget):
         # polling rate
         lbl_poll = QLabel("Polling rate (Hz)")
         self.spin_poll = QSpinBox()
-        self.spin_poll.setRange(1, 1000)
+        self.spin_poll.setRange(0, 1000)
         self.spin_poll.setFixedWidth(100)
         pr_layout = QHBoxLayout()
         pr_layout.addWidget(lbl_poll)
