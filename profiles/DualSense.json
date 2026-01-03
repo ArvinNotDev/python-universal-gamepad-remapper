@@ -1,40 +1,26 @@
 {
   "axes": {
-    "left_stick_y": { "byte": 2, "signed": false, "invert": true },
     "left_stick_x": { "byte": 1, "signed": false, "invert": false },
+    "left_stick_y": { "byte": 2, "signed": false, "invert": true },
     "right_stick_x": { "byte": 3, "signed": false, "invert": false },
     "right_stick_y": { "byte": 4, "signed": false, "invert": false },
     "left_trigger": { "byte": 8, "signed": false, "invert": false },
     "right_trigger": { "byte": 9, "signed": false, "invert": false }
   },
   "buttons": {
-    "cross":  { "byte": 5, "mask": "0x20" },
-    "circle": { "byte": 5, "mask": "0x40" },
-    "square": { "byte": 5, "mask": "0x10" },
+    "cross":    { "byte": 5, "mask": "0x20" },
+    "circle":   { "byte": 5, "mask": "0x40" },
+    "square":   { "byte": 5, "mask": "0x10" },
     "triangle": { "byte": 5, "mask": "0x80" },
-    "l1":     { "byte": 6, "mask": "0x01" },
-    "r1":     { "byte": 6, "mask": "0x02" },
-    "dpad_up":    { "byte": 5, "mask": "0x00", "value": 0 }, 
-    "dpad_right": { "byte": 5, "mask": "0x00", "value": 1 }, 
-    "dpad_down":  { "byte": 5, "mask": "0x00", "value": 2 },  
-    "dpad_left":  { "byte": 5, "mask": "0x00", "value": 3 }   
+    "l1":       { "byte": 6, "mask": "0x01" },
+    "r1":       { "byte": 6, "mask": "0x02" },
+    "share":    { "byte": 6, "mask": "0x10" },
+    "option":   { "byte": 6, "mask": "0x20" },
+    "l3":       { "byte": 6, "mask": "0x40" },
+    "r3":       { "byte": 6, "mask": "0x80" }
   },
-  "mapping": {
-    "cross": "A",
-    "circle": "B",
-    "square": "X",
-    "triangle": "Y",
-    "l1": "LB",
-    "r1": "RB",
-    "left_trigger": "LT",
-    "right_trigger": "RT",
-    "dpad_up": "DPadUp",
-    "dpad_down": "DPadDown",
-    "dpad_left": "DPadLeft",
-    "dpad_right": "DPadRight",
-    "left_stick_x": "LeftThumbX",
-    "left_stick_y": "LeftThumbY",
-    "right_stick_x": "RightThumbX",
-    "right_stick_y": "RightThumbY"
+  "dpad_hat": {
+    "byte": 5,
+    "mask": "0x0F"
   }
 }
