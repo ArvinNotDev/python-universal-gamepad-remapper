@@ -1,11 +1,11 @@
 {
   "axes": {
-    "left_stick_x": { "byte": 1, "signed": false, "invert": false },
-    "left_stick_y": { "byte": 2, "signed": false, "invert": true },
-    "right_stick_x": { "byte": 3, "signed": false, "invert": false },
-    "right_stick_y": { "byte": 4, "signed": false, "invert": false },
-    "left_trigger": { "byte": 8, "signed": false, "invert": false },
-    "right_trigger": { "byte": 9, "signed": false, "invert": false }
+    "left_stick_x": { "byte": 1, "signed": false},
+    "left_stick_y": { "byte": 2, "signed": false},
+    "right_stick_x": { "byte": 3, "signed": false},
+    "right_stick_y": { "byte": 4, "signed": false},
+    "left_trigger": { "byte": 8, "signed": false},
+    "right_trigger": { "byte": 9, "signed": false}
   },
   "buttons": {
     "cross":    { "byte": 5, "mask": "0x20" },
