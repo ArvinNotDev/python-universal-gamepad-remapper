@@ -5,7 +5,6 @@ __pycache__/
 .vs/
 # C extensions
 *.so
-config/
 # Distribution / packaging
 .Python
 build/
