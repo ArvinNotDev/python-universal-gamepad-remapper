@@ -80,10 +80,10 @@ class SettingsManager:
     def set_invertion(self, left: tuple, right: tuple):
         if not self.config.has_section("device"):
             self.config.add_section("device")
-        self.config.set("device", "left_stick_invert_x", left[0])
-        self.config.set("device", "left_stick_invert_y", left[1])
-        self.config.set("device", "right_stick_invert_x", right[0])
-        self.config.set("device", "right_stick_invert_y", right[1])
+        self.config.set("device", "left_stick_invert_x", f"{left[0]}")
+        self.config.set("device", "left_stick_invert_y", f"{left[1]}")
+        self.config.set("device", "right_stick_invert_x", f"{right[0]}")
+        self.config.set("device", "right_stick_invert_y", f"{right[1]}")
 
     # -------- ui --------
     def get_ui_language(self):
