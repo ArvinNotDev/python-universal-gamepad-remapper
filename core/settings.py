@@ -70,6 +70,13 @@ class SettingsManager:
         self.config.set("device", "left_stick_deadzone", f"{left:.6f}")
         self.config.set("device", "right_stick_deadzone", f"{right:.6f}")
 
+    def get_invertion(self, left: bool, right: bool):
+        left_x = self.config.getboolean("device", "left_stick_invert_x")
+        left_y = self.config.getboolean("device", "left_stick_invert_y")
+        right_x = self.config.getboolean("device", "right_stick_invert_x")
+        right_y = self.config.getboolean("device", "right_stick_invert_y")
+        return ((left_x, left_y), (right_x, right_y))
+
     # -------- ui --------
     def get_ui_language(self):
         return self.config.get("ui", "language", fallback="eng")
