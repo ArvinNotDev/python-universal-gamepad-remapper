@@ -115,7 +115,8 @@ class Mapper:
 
         return up, down, left, right
 
-    def _apply_deadzone(self, raw_x, raw_y, deadzone, invert_y, invert_x):
+    def _apply_deadzone(self, raw_x, raw_y, deadzone, invertion):
+        invert_x, invert_y = invertion
         cx = raw_x - 128
         cy = raw_y - 128
         if abs(cx) < deadzone * 127:
@@ -151,9 +152,10 @@ class Mapper:
         raw_rt  = self._read_byte_safe(report, rt_cfg.get("byte"))
         
         left_stick_deadzone, right_stick_deadzone = self.settings.get_deadzones()
+        left_stick_invertion, right_stick_invertion = self.settings.get_invertion()
 
-        ljx, ljy = self._apply_deadzone(raw_ljx, raw_ljy, left_stick_deadzone, left_y_cfg.get("invert", False), left_x_cfg.get("invert", False))
-        rjx, rjy = self._apply_deadzone(raw_rjx, raw_rjy, right_stick_deadzone, right_y_cfg.get("invert", False), right_x_cfg.get("invert", False))
+        ljx, ljy = self._apply_deadzone(raw_ljx, raw_ljy, left_stick_deadzone, left_stick_invertion)
+        rjx, rjy = self._apply_deadzone(raw_rjx, raw_rjy, right_stick_deadzone, right_stick_invertion)
 
         lt = int(raw_lt)
         rt = int(raw_rt)
