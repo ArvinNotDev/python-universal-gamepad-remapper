@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout,
     QLabel, QPushButton, QSlider, QFrame, QListWidget, QStackedWidget,
     QSpinBox, QCheckBox, QComboBox, QLineEdit, QMessageBox, QGroupBox,
-    QSizePolicy, QSpacerItem
+    QSizePolicy, QSpacerItem, QDoubleSpinBox
 )
 from PySide6.QtCore import Qt
 
@@ -60,6 +60,19 @@ class SettingsPage(QWidget):
 
         self.chk_dpad_mouse = QCheckBox("D-Pad as mouse")
         device_form.addRow(self.chk_dpad_mouse)
+
+        self.chk_mouse_mode = QCheckBox("Mouse mode")
+        device_form.addRow(self.chk_mouse_mode)
+
+        sens_row = QHBoxLayout()
+        self.spin_mouse_sens = QDoubleSpinBox()
+        self.spin_mouse_sens.setRange(0.1, 10.0)
+        self.spin_mouse_sens.setSingleStep(0.1)
+        self.spin_mouse_sens.setDecimals(2)
+        self.spin_mouse_sens.setFixedWidth(110)
+        sens_row.addWidget(self.spin_mouse_sens)
+        sens_row.addStretch()
+        device_form.addRow("Mouse sensitivity", sens_row)
 
         deadzone_layout = QGridLayout()
         deadzone_layout.setHorizontalSpacing(12)
@@ -242,9 +255,11 @@ class SettingsPage(QWidget):
 
         self.menu.currentRowChanged.connect(self.pages.setCurrentIndex)
 
-        self.spin_poll.setValue(self.settings.get_polling_rate())
+        self.spin_poll.setValue(int(self.settings.get_polling_rate()))
         self.chk_reconnect.setChecked(self.settings.get_auto_reconnect())
         self.chk_dpad_mouse.setChecked(self.settings.get_dpad_as_mouse())
+        self.chk_mouse_mode.setChecked(self.settings.get_mouse_mode())
+        self.spin_mouse_sens.setValue(self.settings.get_mouse_sensitivity())
         left, right = self.settings.get_deadzones()
         self.left_slider.setValue(int(left * 1000))
         self.right_slider.setValue(int(right * 1000))
@@ -303,6 +318,8 @@ class SettingsPage(QWidget):
         self.spin_poll.setValue(0)
         self.chk_reconnect.setChecked(False)
         self.chk_dpad_mouse.setChecked(True)
+        self.chk_mouse_mode.setChecked(False)
+        self.spin_mouse_sens.setValue(1.0)
         self.left_slider.setValue(100)
         self.right_slider.setValue(100)
         self.left_val.setText("0.10")
@@ -318,6 +335,8 @@ class SettingsPage(QWidget):
         self.settings.set_polling_rate(polling)
         self.settings.set_auto_reconnect(self.chk_reconnect.isChecked())
         self.settings.set_dpad_as_mouse(self.chk_dpad_mouse.isChecked())
+        self.settings.set_mouse_mode(self.chk_mouse_mode.isChecked())
+        self.settings.set_mouse_sensitivity(self.spin_mouse_sens.value())
         left = self.left_slider.value() / 1000.0
         right = self.right_slider.value() / 1000.0
         self.settings.set_deadzones(left, right)
