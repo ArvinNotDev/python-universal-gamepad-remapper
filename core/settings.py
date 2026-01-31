@@ -9,21 +9,27 @@ class SettingsManager:
         if not self.path.exists():
             self.path.parent.mkdir(parents=True, exist_ok=True)
             self.config["device"] = {
-                "polling_rate": "2",
+                "polling_rate": "1.0",
                 "auto_reconnect": "false",
                 "dpad_as_mouse": "true",
-                "left_stick_deadzone": "0.1",
-                "right_stick_deadzone": "0.1",
+                "left_stick_deadzone": "0.000000",
+                "right_stick_deadzone": "0.000000",
+                "right_stick_invert_x": "false",
+                "right_stick_invert_y": "false",
+                "left_stick_invert_x": "false",
+                "left_stick_invert_y": "true",
+                "mouse_mode": "false",
+                "mouse_sensitivity": "1.0"
             }
             self.config["ui"] = {
                 "language": "eng",
-                "theme": "dark",
+                "theme": "dark"
             }
             self.config["developer"] = {
                 "debug": "false",
                 "raw_hid_debug": "false",
                 "log_to_file": "false",
-                "log_file_path": "logs/mapper.log",
+                "log_file_path": "logs/mapper.log"
             }
             with self.path.open("w", encoding="utf-8") as f:
                 self.config.write(f)
@@ -32,12 +38,12 @@ class SettingsManager:
 
     # -------- device --------
     def get_polling_rate(self):
-        return self.config.getint("device", "polling_rate", fallback=2)
+        return self.config.getfloat("device", "polling_rate", fallback=1.0)
 
-    def set_polling_rate(self, v: int):
+    def set_polling_rate(self, v: float):
         if not self.config.has_section("device"):
             self.config.add_section("device")
-        self.config.set("device", "polling_rate", str(int(v)))
+        self.config.set("device", "polling_rate", str(float(v)))
 
     def get_auto_reconnect(self):
         return self.config.getboolean("device", "auto_reconnect", fallback=False)
@@ -71,20 +77,36 @@ class SettingsManager:
         self.config.set("device", "right_stick_deadzone", f"{right:.6f}")
 
     def get_invertion(self):
-        left_x = self.config.getboolean("device", "left_stick_invert_x")
-        left_y = self.config.getboolean("device", "left_stick_invert_y")
-        right_x = self.config.getboolean("device", "right_stick_invert_x")
-        right_y = self.config.getboolean("device", "right_stick_invert_y")
+        left_x = self.config.getboolean("device", "left_stick_invert_x", fallback=False)
+        left_y = self.config.getboolean("device", "left_stick_invert_y", fallback=False)
+        right_x = self.config.getboolean("device", "right_stick_invert_x", fallback=False)
+        right_y = self.config.getboolean("device", "right_stick_invert_y", fallback=False)
         return ((left_x, left_y), (right_x, right_y))
     
     def set_invertion(self, left: tuple, right: tuple):
         if not self.config.has_section("device"):
             self.config.add_section("device")
-        self.config.set("device", "left_stick_invert_x", f"{left[0]}")
-        self.config.set("device", "left_stick_invert_y", f"{left[1]}")
-        self.config.set("device", "right_stick_invert_x", f"{right[0]}")
-        self.config.set("device", "right_stick_invert_y", f"{right[1]}")
+        self.config.set("device", "left_stick_invert_x", "true" if bool(left[0]) else "false")
+        self.config.set("device", "left_stick_invert_y", "true" if bool(left[1]) else "false")
+        self.config.set("device", "right_stick_invert_x", "true" if bool(right[0]) else "false")
+        self.config.set("device", "right_stick_invert_y", "true" if bool(right[1]) else "false")
 
+    def get_mouse_mode(self):
+        return self.config.getboolean("device", "mouse_mode", fallback=False)
+    
+    def set_mouse_mode(self, enabled: bool):
+        if not self.config.has_section("device"):
+            self.config.add_section("device")
+        self.config.set("device", "mouse_mode", "true" if enabled else "false")
+
+    def get_mouse_sensitivity(self):
+        return self.config.getfloat("device", "mouse_sensitivity", fallback=1.0)
+    
+    def set_mouse_sensitivity(self, sens: float):
+        if not self.config.has_section("device"):
+            self.config.add_section("device")
+        self.config.set("device", "mouse_sensitivity", f"{float(sens):.6f}")
+        
     # -------- ui --------
     def get_ui_language(self):
         return self.config.get("ui", "language", fallback="eng")
