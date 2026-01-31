@@ -1,5 +1,7 @@
 from core.emulator import EmulateX360, EmulateKeyboard
+from core.mouse import Mouse
 import json
+import pyautogui
 
 class Mapper:
 
@@ -9,6 +11,10 @@ class Mapper:
         self._connected = False
         self.debug = debug
         self.settings = settings
+        self.mouse_mode = True
+        self._prev_back = False
+        self._prev_a = False
+        self._prev_b = False
 
         if emulate_to == "x360":
             self.emulator = EmulateX360(controller.device_path)
@@ -75,7 +81,6 @@ class Mapper:
         byte_idx = cfg.get("index", cfg.get("byte"))
         val = self._read_byte_safe(report, byte_idx)
         
-        # Apply mask first if it exists
         mask = cfg.get("mask")
         if mask is not None:
             if isinstance(mask, str):
@@ -84,11 +89,9 @@ class Mapper:
                 mask_int = int(mask)
             val = val & mask_int
 
-        # If specific value is required (rarely used with mask, but logic kept)
         if "value" in cfg:
             return val == cfg["value"]
         
-        # If no 'value' specified, any non-zero result means pressed
         return val != 0
     
     def _get_dpad_from_hat(self, report, cfg):
@@ -136,7 +139,6 @@ class Mapper:
         buttons_cfg = self.controller_config.get("buttons", {})
         dpad_cfg = self.controller_config.get("dpad_hat", {})
         
-        # --- Axes Processing ---
         left_x_cfg = axes_cfg.get("left_stick_x", {})
         left_y_cfg = axes_cfg.get("left_stick_y", {})
         right_x_cfg = axes_cfg.get("right_stick_x", {})
@@ -160,7 +162,6 @@ class Mapper:
         lt = int(raw_lt)
         rt = int(raw_rt)
 
-        # --- Button Processing ---
         a  = self._get_button_from_cfg(report, buttons_cfg.get("cross"))
         b  = self._get_button_from_cfg(report, buttons_cfg.get("circle"))
         x_ = self._get_button_from_cfg(report, buttons_cfg.get("square"))
@@ -168,25 +169,61 @@ class Mapper:
         lb = self._get_button_from_cfg(report, buttons_cfg.get("l1"))
         rb = self._get_button_from_cfg(report, buttons_cfg.get("r1"))
         
-        # New buttons
-        back  = self._get_button_from_cfg(report, buttons_cfg.get("share"))   # Select/Back
-        start = self._get_button_from_cfg(report, buttons_cfg.get("option"))  # Start
-        l3    = self._get_button_from_cfg(report, buttons_cfg.get("l3"))      # Thumb click
-        r3    = self._get_button_from_cfg(report, buttons_cfg.get("r3"))      # Thumb click
+        back  = self._get_button_from_cfg(report, buttons_cfg.get("share"))
+        start = self._get_button_from_cfg(report, buttons_cfg.get("option"))
+        l3    = self._get_button_from_cfg(report, buttons_cfg.get("l3"))
+        r3    = self._get_button_from_cfg(report, buttons_cfg.get("r3"))
 
-        # --- D-Pad Processing (Hat Switch) ---
         dpu, dpd, dpl, dpr = self._get_dpad_from_hat(report, dpad_cfg)
 
         if self.debug:
-             print(f"Hat: U={dpu} D={dpd} L={dpl} R={dpr} | Btns: Back={back} Start={start}")
+            print(f"Hat: U={dpu} D={dpd} L={dpl} R={dpr} | Btns: Back={back} Start={start}")
+        
+        self.mouse_mode = self.settings.get_mouse_mode()
+        if self.mouse_mode:
+            if not hasattr(self, "_mx"):
+                self._mx = 0.0
+                self._my = 0.0
 
-        self.emulator.update(
-            ljx, ljy, rjx, rjy,
-            a, x_, b, y_,
-            rb, rt, lb, lt,
-            dpu, dpd, dpr, dpl,
-            back, start, l3, r3
-        )
+            try:
+                sensitivity = self.settings.get_mouse_sensitivity()
+            except Exception:
+                sensitivity = 1.0
+
+            nx = ljx / 32768.0
+            ny = ljy / 32768.0
+
+            speed = 35.0 * sensitivity
+            target_dx = nx * speed
+            target_dy = -ny * speed
+
+            alpha = 0.25
+            self._mx = self._mx * (1.0 - alpha) + target_dx * alpha
+            self._my = self._my * (1.0 - alpha) + target_dy * alpha
+
+            Mouse.moveRel(self._mx, self._my, duration=0)
+
+            if a and not self._prev_a:
+                Mouse.leftClick()
+                self._prev_a = True
+            if not a:
+                self._prev_a = False
+            if b and not self._prev_b:
+                Mouse.rightClick()
+                self._prev_b = True
+            if not b:
+                self._prev_b = False
+            if back and not self._prev_back:
+                self.mouse_mode = False
+            self._prev_back = back
+        else:
+            self.emulator.update(
+                ljx, ljy, rjx, rjy,
+                a, x_, b, y_,
+                rb, rt, lb, lt,
+                dpu, dpd, dpr, dpl,
+                back, start, l3, r3
+            )
 
     def _handle_keyboard_input(self, data: bytes):
         pass
