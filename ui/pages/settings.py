@@ -7,16 +7,26 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
+
 class SettingsPage(QWidget):
     def __init__(self, theme_manager, settings: object):
         super().__init__()
         self.theme_manager = theme_manager
         self.settings = settings
 
+        # Make sure config is normalized (all keys exist / sane) before we read anything
+        if hasattr(self.settings, "normalize"):
+            try:
+                self.settings.normalize()
+            except Exception:
+                # If normalize fails for any reason, we still continue with fallbacks
+                pass
+
         root = QHBoxLayout(self)
         root.setContentsMargins(18, 18, 18, 18)
         root.setSpacing(18)
 
+        # ====== Left menu ======
         self.menu = QListWidget()
         self.menu.addItem("Device")
         self.menu.addItem("UI")
@@ -25,9 +35,13 @@ class SettingsPage(QWidget):
         self.menu.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
         root.addWidget(self.menu)
 
+        # ====== Pages stack ======
         self.pages = QStackedWidget()
         root.addWidget(self.pages, 1)
 
+        # ==========================================================
+        # DEVICE PAGE
+        # ==========================================================
         device_page = QWidget()
         device_layout = QVBoxLayout(device_page)
         device_layout.setContentsMargins(0, 0, 0, 0)
@@ -47,6 +61,7 @@ class SettingsPage(QWidget):
         device_form.setHorizontalSpacing(18)
         device_form.setVerticalSpacing(12)
 
+        # Polling rate
         poll_row = QHBoxLayout()
         self.spin_poll = QSpinBox()
         self.spin_poll.setRange(0, 1000)
@@ -55,6 +70,7 @@ class SettingsPage(QWidget):
         poll_row.addStretch()
         device_form.addRow("Polling rate (Hz)", poll_row)
 
+        # Checkboxes
         self.chk_reconnect = QCheckBox("Auto reconnect")
         device_form.addRow(self.chk_reconnect)
 
@@ -64,6 +80,7 @@ class SettingsPage(QWidget):
         self.chk_mouse_mode = QCheckBox("Mouse mode")
         device_form.addRow(self.chk_mouse_mode)
 
+        # Mouse sensitivity
         sens_row = QHBoxLayout()
         self.spin_mouse_sens = QDoubleSpinBox()
         self.spin_mouse_sens.setRange(0.1, 10.0)
@@ -74,6 +91,7 @@ class SettingsPage(QWidget):
         sens_row.addStretch()
         device_form.addRow("Mouse sensitivity", sens_row)
 
+        # Deadzones
         deadzone_layout = QGridLayout()
         deadzone_layout.setHorizontalSpacing(12)
         deadzone_layout.setVerticalSpacing(10)
@@ -106,33 +124,44 @@ class SettingsPage(QWidget):
         deadzone_container.setLayout(deadzone_layout)
         device_form.addRow(deadzone_container)
 
+        # Axis inversion group
         inv_group = QGroupBox("Axis inversion")
         inv_layout = QGridLayout()
         inv_layout.setHorizontalSpacing(18)
         inv_layout.setVerticalSpacing(8)
+
         left_label = QLabel("Left")
         left_label.setAlignment(Qt.AlignCenter)
         right_label = QLabel("Right")
         right_label.setAlignment(Qt.AlignCenter)
+
         inv_layout.addWidget(QLabel(""), 0, 0)
         inv_layout.addWidget(left_label, 0, 1)
         inv_layout.addWidget(right_label, 0, 2)
-        inv_layout.addWidget(QLabel("Invert X"), 1, 0)
+
+        inv_layout.addWidget(QLabel("Invert X joystick"), 1, 0)
         self.chk_left_invert_x = QCheckBox()
         self.chk_right_invert_x = QCheckBox()
         inv_layout.addWidget(self.chk_left_invert_x, 1, 1, alignment=Qt.AlignCenter)
         inv_layout.addWidget(self.chk_right_invert_x, 1, 2, alignment=Qt.AlignCenter)
-        inv_layout.addWidget(QLabel("Invert Y"), 2, 0)
+
+        inv_layout.addWidget(QLabel("Invert Y joystick"), 2, 0)
         self.chk_left_invert_y = QCheckBox()
         self.chk_right_invert_y = QCheckBox()
         inv_layout.addWidget(self.chk_left_invert_y, 2, 1, alignment=Qt.AlignCenter)
         inv_layout.addWidget(self.chk_right_invert_y, 2, 2, alignment=Qt.AlignCenter)
+
+        self.chk_button_invert = QCheckBox()
+        inv_layout.addWidget(self.chk_button_invert, 3, 1, alignment=Qt.AlignCenter)
+        inv_layout.addWidget(QLabel("Invert buttons"), 3, 0)
+
         inv_group.setLayout(inv_layout)
         device_form.addRow(inv_group)
 
         device_group.setLayout(device_form)
         device_layout.addWidget(device_group)
 
+        # Device bottom buttons
         device_buttons = QHBoxLayout()
         device_buttons.addItem(QSpacerItem(20, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
         self.dev_restore = QPushButton("Restore Default")
@@ -148,6 +177,9 @@ class SettingsPage(QWidget):
 
         self.pages.addWidget(device_page)
 
+        # ==========================================================
+        # UI PAGE
+        # ==========================================================
         ui_page = QWidget()
         ui_layout = QVBoxLayout(ui_page)
         ui_layout.setContentsMargins(0, 0, 0, 0)
@@ -173,6 +205,7 @@ class SettingsPage(QWidget):
         self.combo_theme = QComboBox()
         self.combo_theme.setMinimumWidth(120)
         self.combo_theme.view().setMinimumWidth(140)
+
         theme_names = []
         try:
             base = getattr(self.theme_manager, "base_path", None)
@@ -204,6 +237,9 @@ class SettingsPage(QWidget):
 
         self.pages.addWidget(ui_page)
 
+        # ==========================================================
+        # DEVELOPER PAGE
+        # ==========================================================
         dev_page = QWidget()
         dev_layout = QVBoxLayout(dev_page)
         dev_layout.setContentsMargins(0, 0, 0, 0)
@@ -253,57 +289,120 @@ class SettingsPage(QWidget):
 
         self.pages.addWidget(dev_page)
 
+        # ==========================================================
+        # MENU → STACK CONNECTION
+        # ==========================================================
         self.menu.currentRowChanged.connect(self.pages.setCurrentIndex)
 
-        self.spin_poll.setValue(int(self.settings.get_polling_rate()))
-        self.chk_reconnect.setChecked(self.settings.get_auto_reconnect())
-        self.chk_dpad_mouse.setChecked(self.settings.get_dpad_as_mouse())
-        self.chk_mouse_mode.setChecked(self.settings.get_mouse_mode())
-        self.spin_mouse_sens.setValue(self.settings.get_mouse_sensitivity())
-        left, right = self.settings.get_deadzones()
-        self.left_slider.setValue(int(left * 1000))
-        self.right_slider.setValue(int(right * 1000))
-        self.left_val.setText(f"{left:.2f}")
-        self.right_val.setText(f"{right:.2f}")
-        self.combo_lang.setCurrentText(self.settings.get_ui_language())
-        current_theme = self.settings.get_ui_theme()
-        if current_theme in [self.combo_theme.itemText(i) for i in range(self.combo_theme.count())]:
-            self.combo_theme.setCurrentText(current_theme)
+        # ==========================================================
+        # INITIAL LOAD FROM SETTINGS
+        # ==========================================================
         try:
-            inv = self.settings.get_invertion()
+            polling = int(self.settings.get_polling_rate())
         except Exception:
-            try:
-                inv = self.settings.get_inversion()
-            except Exception:
-                inv = ((False, False), (False, False))
-        try:
-            left_inv, right_inv = inv
-        except Exception:
-            left_inv, right_inv = (False, False), (False, False)
-        try:
-            self.chk_left_invert_x.setChecked(bool(left_inv[0]))
-            self.chk_left_invert_y.setChecked(bool(left_inv[1]))
-        except Exception:
-            self.chk_left_invert_x.setChecked(False)
-            self.chk_left_invert_y.setChecked(False)
-        try:
-            self.chk_right_invert_x.setChecked(bool(right_inv[0]))
-            self.chk_right_invert_y.setChecked(bool(right_inv[1]))
-        except Exception:
-            self.chk_right_invert_x.setChecked(False)
-            self.chk_right_invert_y.setChecked(False)
-        self.chk_debug.setChecked(self.settings.get_developer_debug())
-        self.chk_raw_hid.setChecked(self.settings.get_raw_hid_debug())
-        self.chk_log_to_file.setChecked(self.settings.get_log_to_file())
-        self.edit_log_path.setText(self.settings.get_log_file_path())
+            polling = 1
+        self.spin_poll.setValue(polling)
 
         try:
-            self.theme_manager.apply_theme(self.settings.get_ui_theme())
+            self.chk_reconnect.setChecked(self.settings.get_auto_reconnect())
+        except Exception:
+            self.chk_reconnect.setChecked(False)
+
+        try:
+            self.chk_dpad_mouse.setChecked(self.settings.get_dpad_as_mouse())
+        except Exception:
+            self.chk_dpad_mouse.setChecked(True)
+
+        try:
+            self.chk_mouse_mode.setChecked(self.settings.get_mouse_mode())
+        except Exception:
+            self.chk_mouse_mode.setChecked(False)
+
+        try:
+            self.spin_mouse_sens.setValue(self.settings.get_mouse_sensitivity())
+        except Exception:
+            self.spin_mouse_sens.setValue(1.0)
+
+        try:
+            left_dz, right_dz = self.settings.get_deadzones()
+        except Exception:
+            left_dz, right_dz = 0.1, 0.1
+
+        self.left_slider.setValue(int(left_dz * 1000))
+        self.right_slider.setValue(int(right_dz * 1000))
+        self.left_val.setText(f"{left_dz:.2f}")
+        self.right_val.setText(f"{right_dz:.2f}")
+
+        try:
+            left_inv, right_inv = self.settings.get_joystick_invertion()
+        except Exception:
+            left_inv, right_inv = (False, False), (False, False)
+
+        self.chk_left_invert_x.setChecked(bool(left_inv[0]))
+        self.chk_left_invert_y.setChecked(bool(left_inv[1]))
+        self.chk_right_invert_x.setChecked(bool(right_inv[0]))
+        self.chk_right_invert_y.setChecked(bool(right_inv[1]))
+
+        try:
+            self.chk_button_invert.setChecked(self.settings.get_button_invertion())
+        except Exception:
+            self.chk_button_invert.setChecked(False)
+
+        try:
+            lang = self.settings.get_ui_language()
+        except Exception:
+            lang = "eng"
+        if lang not in [self.combo_lang.itemText(i) for i in range(self.combo_lang.count())]:
+            lang = "eng"
+        self.combo_lang.setCurrentText(lang)
+
+        try:
+            current_theme = self.settings.get_ui_theme()
+        except Exception:
+            current_theme = "dark"
+        if current_theme in [self.combo_theme.itemText(i) for i in range(self.combo_theme.count())]:
+            self.combo_theme.setCurrentText(current_theme)
+
+        try:
+            dbg = self.settings.get_developer_debug()
+        except Exception:
+            dbg = False
+        self.chk_debug.setChecked(dbg)
+
+        try:
+            raw_hid = self.settings.get_raw_hid_debug()
+        except Exception:
+            raw_hid = False
+        self.chk_raw_hid.setChecked(raw_hid)
+
+        try:
+            log_to_file = self.settings.get_log_to_file()
+        except Exception:
+            log_to_file = False
+        self.chk_log_to_file.setChecked(log_to_file)
+
+        try:
+            log_path = self.settings.get_log_file_path()
+        except Exception:
+            log_path = "logs/mapper.log"
+        self.edit_log_path.setText(log_path)
+
+        # Apply theme from settings
+        try:
+            if hasattr(self.theme_manager, "apply_theme"):
+                self.theme_manager.apply_theme(self.settings.get_ui_theme())
         except Exception:
             pass
 
-        self.left_slider.valueChanged.connect(lambda v: self.left_val.setText(f"{v/1000:.2f}"))
-        self.right_slider.valueChanged.connect(lambda v: self.right_val.setText(f"{v/1000:.2f}"))
+        # ==========================================================
+        # SIGNALS
+        # ==========================================================
+        self.left_slider.valueChanged.connect(
+            lambda v: self.left_val.setText(f"{v/1000:.2f}")
+        )
+        self.right_slider.valueChanged.connect(
+            lambda v: self.right_val.setText(f"{v/1000:.2f}")
+        )
 
         self.dev_restore.clicked.connect(self.restore_device_defaults)
         self.dev_apply.clicked.connect(self.apply_device)
@@ -314,6 +413,9 @@ class SettingsPage(QWidget):
         self.dev_restore2.clicked.connect(self.restore_dev_defaults)
         self.dev_apply2.clicked.connect(self.apply_dev)
 
+    # ==========================================================
+    # DEVICE ACTIONS
+    # ==========================================================
     def restore_device_defaults(self):
         self.spin_poll.setValue(0)
         self.chk_reconnect.setChecked(False)
@@ -328,6 +430,7 @@ class SettingsPage(QWidget):
         self.chk_left_invert_y.setChecked(False)
         self.chk_right_invert_x.setChecked(False)
         self.chk_right_invert_y.setChecked(False)
+        self.chk_button_invert.setChecked(False)
 
     def apply_device(self):
         old_polling = self.settings.get_polling_rate()
@@ -337,30 +440,40 @@ class SettingsPage(QWidget):
         self.settings.set_dpad_as_mouse(self.chk_dpad_mouse.isChecked())
         self.settings.set_mouse_mode(self.chk_mouse_mode.isChecked())
         self.settings.set_mouse_sensitivity(self.spin_mouse_sens.value())
+
         left = self.left_slider.value() / 1000.0
         right = self.right_slider.value() / 1000.0
         self.settings.set_deadzones(left, right)
+
         left_inv = (self.chk_left_invert_x.isChecked(), self.chk_left_invert_y.isChecked())
         right_inv = (self.chk_right_invert_x.isChecked(), self.chk_right_invert_y.isChecked())
-        try:
-            self.settings.set_invertion(left_inv, right_inv)
-        except Exception:
-            try:
-                self.settings.set_inversion(left_inv, right_inv)
-            except Exception:
-                pass
+        self.settings.set_joystick_invertion(left_inv, right_inv)
+
+        self.settings.set_button_invertion(self.chk_button_invert.isChecked())
+
         self.settings.save()
+
         if polling != old_polling:
             msg = QMessageBox(self)
             msg.setIcon(QMessageBox.Information)
             msg.setWindowTitle("Restart Required")
-            msg.setText("Polling rate has changed. Please restart the application for the changes to take effect.")
+            msg.setText(
+                "Polling rate has changed. Please restart the application for the changes to take effect."
+            )
             msg.setStandardButtons(QMessageBox.Ok)
             msg.exec()
 
+    # ==========================================================
+    # UI ACTIONS
+    # ==========================================================
     def restore_ui_defaults(self):
         self.combo_lang.setCurrentText("eng")
-        self.combo_theme.setCurrentText("dark")
+        # choose "dark" if available, else first item
+        if "dark" in [self.combo_theme.itemText(i) for i in range(self.combo_theme.count())]:
+            self.combo_theme.setCurrentText("dark")
+        else:
+            if self.combo_theme.count() > 0:
+                self.combo_theme.setCurrentIndex(0)
 
     def apply_ui(self):
         self.settings.set_ui_language(self.combo_lang.currentText())
@@ -368,10 +481,14 @@ class SettingsPage(QWidget):
         self.settings.set_ui_theme(theme)
         self.settings.save()
         try:
-            self.theme_manager.apply_theme(theme)
+            if hasattr(self.theme_manager, "apply_theme"):
+                self.theme_manager.apply_theme(theme)
         except Exception:
             pass
 
+    # ==========================================================
+    # DEVELOPER ACTIONS
+    # ==========================================================
     def restore_dev_defaults(self):
         self.chk_debug.setChecked(False)
         self.chk_raw_hid.setChecked(False)

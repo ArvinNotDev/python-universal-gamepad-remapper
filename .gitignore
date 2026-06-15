@@ -204,3 +204,13 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+
+gamepad_config.json
+gamepad_uuid.txt
+device_name.txt
+buttons.txt
+last_ip.txt
+trusted_clients.json
+hotkeys.json

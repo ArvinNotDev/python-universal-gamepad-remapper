@@ -21,6 +21,13 @@ class HIDWorker(QObject):
         ds = hid.device()
         try:
             ds.open_path(self.controller.device_path)
+            # for rid in [0x05, 0x09, 0x20]:
+            #     try:
+            #         data = ds.get_feature_report(rid, 65)
+            #         print(hex(rid), data)
+            #     except Exception as e:
+            #         print("fail", hex(rid), e)
+            ds.get_feature_report(0x05, 65)     # feature report to make the controller give more data
         except Exception as e:
             self.error.emit(f"Failed to open {self.controller}: {e}")
             self.finished.emit()
@@ -30,9 +37,13 @@ class HIDWorker(QObject):
             while self._running:
                 try:
                     try:
-                        report = ds.read(64, timeout_ms=1)
+                        report = ds.read(65, timeout_ms=1)
+                        # for i, r in enumerate(report):
+                        #     if not r:
+                        #         report = report[:i] + report[i+1:]
+                        # print(report)
                     except TypeError:
-                        report = ds.read(64, timeout=1)
+                        report = ds.read(65, timeout=1)
 
                     if report:
                         self.data_received.emit(bytes(report))

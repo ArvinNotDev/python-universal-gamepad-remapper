@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 
 from ui.pages.modal.add_controller import AddControllerDialog
-
+from core import emulator
 from core.mapper import Mapper
 from core.settings import SettingsManager
 from core.hid import HIDManager
@@ -72,16 +72,16 @@ class EmuListItemWidget(QWidget):
         self.delete_requested.emit(self)
 
 
-class DashboardPage(QWidget):
-    def __init__(self, settings):
+class ControllerEmulation(QWidget):
+    def __init__(self, settings, controllers_page, hotkey_page):
         super().__init__()
         layout_dashboard = QVBoxLayout(self)
-
+        self.controllers_page = controllers_page
         hid.hid_manager = HIDManager(settings.get_polling_rate() / 1000)
-        print(f"poll: {hid.hid_manager.poll_interval}")
+        self.hotkey_page = hotkey_page
         self.mappers: dict = {}
         self.settings = settings
-        lbl_dashboard = QLabel("Dashboard Page")
+        lbl_dashboard = QLabel("Controller Emulation Page\nPress {Share/Select/⚙️ + R3} to switch between mouse mode and controller mode")
         lbl_dashboard.setAlignment(Qt.AlignCenter)
 
         emu_label = QLabel("List of Emulated Devices")
@@ -129,10 +129,41 @@ class DashboardPage(QWidget):
 
         name_counts = {}
         for dev in devices:
-            name = dev.get("product_string") or f"VID_{dev.get('vendor_id')}_PID_{dev.get('product_id')}"
+            vid = dev.get("vendor_id")
+            pid = dev.get("product_id")
+
+            try:
+                vid_int = int(vid) if isinstance(vid, (int,)) else int(str(vid), 0)
+            except Exception:
+                try:
+                    vid_int = int(vid)
+                except Exception:
+                    vid_int = None
+            try:
+                pid_int = int(pid) if isinstance(pid, (int,)) else int(str(pid), 0)
+            except Exception:
+                try:
+                    pid_int = int(pid)
+                except Exception:
+                    pid_int = None
+
+            if vid_int == 0x054C and pid_int in (0x05C4, 0x09CC):
+                name = "Dualshock4 (PS4 Controller)"
+            elif vid_int == 0x054C and pid_int == 0x0CE6:
+                name = "Dualsense (PS5 Controller)"
+            elif vid_int == 0x10C4 and pid_int == 0x82C0:
+                name = "UnoJoy Controller (Arduino)"
+            else:
+                name = "Not Supported"
+            
+            # --- Skip unsupported devices entirely ---
+            if name == "Not Supported":
+                continue
+            
             count = name_counts.get(name, 0)
             name_counts[name] = count + 1
             display = name if count == 0 else f"{name} ({count})"
+            
             hid_list_display.append(display)
             hid_path_list.append(dev)
 
@@ -167,9 +198,9 @@ class DashboardPage(QWidget):
             try:
                 hid.hid_manager.start_polling(device["vendor_id"], device["product_id"], device["path"])
             except Exception as exc:
-                print(f"[DashboardPage] Warning: start_polling failed for device: {exc}")
+                print(f"[Controller Emulation] Warning: start_polling failed for device: {exc}")
         else:
-            print("[DashboardPage] Warning: selected HID could not be mapped to a device entry.")
+            print("[Controller Emulation] Warning: selected HID could not be mapped to a device entry.")
 
     def add_emulated_mapping(self, hid_choice: str, emu: str, device: Optional[dict] = None) -> bool:
         new_path = device.get("path") if device else None
@@ -228,10 +259,9 @@ class DashboardPage(QWidget):
     def _on_emulate_requested(self, hid_choice: str, emu: str, widget: EmuListItemWidget):
         item = self._find_item_by_widget(widget)
         if item is None:
-            print("[DashboardPage] Could not locate QListWidgetItem for widget")
+            print("[Controller Emulation] Could not locate QListWidgetItem for widget")
             widget.set_running(False)
             return
-
         stored = item.data(Qt.UserRole) or (None, None, None)
         device = stored[0]
         display_name = stored[1] or hid_choice
@@ -239,7 +269,7 @@ class DashboardPage(QWidget):
         if not device:
             device = self._find_device_by_display_name(display_name)
             if not device:
-                print("[DashboardPage] Could not match HID to device")
+                print("[Controller Emulation] Could not match HID to device")
                 widget.set_running(False)
                 return
 
@@ -273,10 +303,12 @@ class DashboardPage(QWidget):
                 controller_type = "Dualshock4"
             elif vid_int == 0x054C and pid_int == 0x0CE6:
                 controller_type = "Dualsense"
+            elif vid_int == 0x10C4 and pid_int == 0x82C0:
+                controller_type = "Unojoy"
             else:
                 controller_type = "Generic"
 
-            mapper = Mapper(controller, controller_type, "x360", self.settings)
+            mapper = Mapper(controller, controller_type, "x360", self.settings, self.controllers_page, self.hotkey_page)
             self.mappers[path] = mapper
 
             wtuple = getattr(hid.hid_manager, "_workers", {}).get(path)
@@ -288,7 +320,8 @@ class DashboardPage(QWidget):
                         worker.error.connect(mapper.handle_error)
                     except RuntimeError:
                         print(f"[Warning] Worker for {path} was deleted before connecting signals")
-
+            print(emulator.ListOfAllControllers.controllers_name)
+            print(emulator.ListOfAllControllers.controllers_path)
             mapper.start()
 
         else:
@@ -335,6 +368,7 @@ class DashboardPage(QWidget):
                 except Exception:
                     pass
                 del self.mappers[path]
+                
             try:
                 hid.hid_manager.stop_polling(path)
             except Exception:

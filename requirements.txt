@@ -1,3 +1,5 @@
 vgamepad
 PySide6
 hidapi
+pyautogui
+keyboard
