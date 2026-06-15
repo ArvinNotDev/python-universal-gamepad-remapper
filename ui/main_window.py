@@ -107,7 +107,7 @@ class MainWindow(QMainWindow):
         # 0: Controller Emulation
         self.pages.addWidget(ControllerEmulation(self.settings, controllers_page, hotkey_page))
         # 1: Remote Gamepad (server page)
-        self.pages.addWidget(ServerPage(self.settings, controllers_page))
+        self.pages.addWidget(ServerPage(self.settings, controllers_page, hotkey_page))
         # 2: Hotkeys page
         self.pages.addWidget(hotkey_page)
         # 3: Test XInput

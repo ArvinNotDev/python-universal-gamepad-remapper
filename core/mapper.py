@@ -354,6 +354,7 @@ class Phone_mapper:
         uuid: str,
         emulate_to: str,
         controllers_page,
+        hotkey_page,
         settings,
         debug: bool = False,
     ):
@@ -364,7 +365,7 @@ class Phone_mapper:
         self.controllers_page = controllers_page
 
         if emulate_to == "x360":
-            self.emulator = EmulateX360(self.uuid, self.uuid)
+            self.emulator = EmulateX360(self.uuid, self.uuid, hotkey_page.hotkey)
             self.controllers_page.add_x360_instance(self.emulator)
         elif emulate_to == "keyboard":
             self.emulator = EmulateKeyboard()

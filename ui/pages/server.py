@@ -204,7 +204,7 @@ class ClientListItemWidget(QWidget):
 
 
 class ServerPage(QWidget):
-    def __init__(self, settings, controllers_page):
+    def __init__(self, settings, controllers_page, hotkey_page):
         super().__init__()
         self.setWindowTitle("Server Control")
         self.setMinimumSize(700, 600)
@@ -216,6 +216,7 @@ class ServerPage(QWidget):
         self.signals = ServerSignals()
         self.settings = settings
         self.controllers_page = controllers_page
+        self.hotkey_page = hotkey_page
 
         # conn_key -> (conn, addr, uuid)
         self.clients: Dict[tuple, Tuple[socket.socket, tuple, str]] = {}
@@ -497,7 +498,7 @@ class ServerPage(QWidget):
                                 # Clear any auth code in UI
                                 self.signals.show_auth_code.emit(addr, "", 0)
 
-                                mapper = Phone_mapper(uuid, "x360", self.controllers_page, self.settings)
+                                mapper = Phone_mapper(uuid, "x360", self.controllers_page,self.hotkey_page, self.settings)
                             else:
                                 received_code = msg.get("auth_code")
                                 if received_code:
@@ -519,7 +520,7 @@ class ServerPage(QWidget):
                                         self.signals.show_auth_code.emit(addr, "", 0)
 
                                         mapper = Phone_mapper(
-                                            uuid, "x360", self.settings
+                                            uuid, "x360", self.controllers_page, self.hotkey_page, self.settings
                                         )
                                     else:
                                         print(f"[{addr}] Invalid auth code: {received_code}")
